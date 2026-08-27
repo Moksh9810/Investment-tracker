@@ -73,7 +73,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v7</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v8</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -126,6 +126,13 @@ function bondCalc(b){
   if(b.btype==='trade'){
     const cur=(b.currentValue!=null&&b.currentValue!==''?+b.currentValue:face);
     return {btype:'trade',invested:face,current:cur,pl:cur-face,interestToDate:0};
+  }
+  if(b.btype==='fixedpay'){
+    const ma=+b.monthlyAmount||0, tot=+b.months||0;
+    const elapsed=tot?Math.min(tot,monthsBetween(b.buyDate)):monthsBetween(b.buyDate);
+    const received=elapsed*ma;
+    const totalInterest=tot?tot*ma:null;
+    return {btype:'fixedpay',invested:face,current:face+received,interestToDate:received,totalInterest,monthly:ma,months:tot,elapsed,pl:received};
   }
   const r=(+b.rate||0)/100, tEl=yearsBetween(b.buyDate);
   const tMat=b.maturityDate?Math.max(0,(new Date(b.maturityDate)-new Date(b.buyDate))/(1000*60*60*24*365.25)):null;
@@ -381,6 +388,13 @@ function renderBonds(){
         +'<td class="num '+plClass(c.pl)+'">'+plSign(c.pl)+inr(c.pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
         +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
     }
+    if(c.btype==='fixedpay'){
+      const totCol=c.totalInterest!=null?inr(b.amount+c.totalInterest):'—';
+      const term=c.months?(c.elapsed+'/'+c.months+' mahine'):(c.elapsed+' mahine');
+      return '<tr><td><span class="name">'+escapeHtml(b.name)+'</span><span class="tag">'+inr(c.monthly)+'/mahina · '+term+' mila · principal wapas '+inr(b.amount)+(b.note?' · '+escapeHtml(b.note):'')+'</span></td>'
+        +'<td class="num">'+inr(c.invested)+'</td><td class="num gain">'+inr(c.interestToDate)+'</td><td class="num">'+totCol+'</td>'
+        +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
+    }
     const fl=b.freq==='cumulative'?'Cumulative':(b.freq==='monthly'?'Monthly':b.freq==='quarterly'?'Quarterly':b.freq==='halfyearly'?'Half-yearly':'Yearly');
     const mat=b.maturityDate?' · maturity '+b.maturityDate:'';
     const totCol=c.totalInterest!=null?inr(b.amount+c.totalInterest):'—';
@@ -389,7 +403,7 @@ function renderBonds(){
       +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
   }).join('');
   const e=editBond?state.bonds.find(x=>x.id===editBond):null;
-  const isTrade=bondMode==='trade';
+  const isTrade=bondMode==='trade', isPay=bondMode==='fixedpay';
   const head=isTrade
     ?'<thead><tr><th>Bond</th><th>Invested</th><th>Current Value</th><th>P/L</th><th></th></tr></thead>'
     :'<thead><tr><th>Bond</th><th>Invested</th><th>Interest (aaj tak)</th><th>Maturity pe total</th><th></th></tr></thead>';
@@ -397,9 +411,13 @@ function renderBonds(){
   if(isTrade){
     fields='<div class="fld"><label>Invested (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype==='trade'?e.amount:'')+'" placeholder="100000" style="width:120px"></div>'
       +'<div class="fld"><label>Current Value (₹)</label><input id="bd-cur" type="number" value="'+(e&&e.btype==='trade'&&e.currentValue!=null?e.currentValue:'')+'" placeholder="abhi ka" style="width:120px"></div>';
+  }else if(isPay){
+    fields='<div class="fld"><label>Invested / Principal (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype==='fixedpay'?e.amount:'')+'" placeholder="40000" style="width:130px"></div>'
+      +'<div class="fld"><label>Har mahine milta hai (₹)</label><input id="bd-monthly" type="number" value="'+(e&&e.btype==='fixedpay'?e.monthlyAmount:'')+'" placeholder="350" style="width:130px"></div>'
+      +'<div class="fld"><label>Kitne mahine (0=chalu)</label><input id="bd-months" type="number" value="'+(e&&e.btype==='fixedpay'&&e.months?e.months:'')+'" placeholder="0 = jab tak chale" style="width:150px"></div>';
   }else{
-    fields='<div class="fld"><label>Invested / Face (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype!=='trade'?e.amount:'')+'" placeholder="100000" style="width:130px"></div>'
-      +'<div class="fld"><label>Byaaj % (saalana)</label><input id="bd-rate" type="number" step="0.01" value="'+(e&&e.btype!=='trade'?e.rate:'')+'" placeholder="8.5" style="width:110px"></div>'
+    fields='<div class="fld"><label>Invested / Face (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype==='fixed'?e.amount:'')+'" placeholder="100000" style="width:130px"></div>'
+      +'<div class="fld"><label>Byaaj % (saalana)</label><input id="bd-rate" type="number" step="0.01" value="'+(e&&e.btype==='fixed'?e.rate:'')+'" placeholder="8.5" style="width:110px"></div>'
       +'<div class="fld"><label>Byaaj kab</label><select id="bd-freq">'
       +['monthly:Monthly','quarterly:Quarterly','halfyearly:Half-yearly','yearly:Yearly','cumulative:Cumulative (ant me)'].map(o=>{const[v,l]=o.split(':');return '<option value="'+v+'"'+(e&&e.freq===v?' selected':'')+'>'+l+'</option>';}).join('')+'</select></div>'
       +'<div class="fld"><label>Maturity Date</label><input id="bd-mat" type="date" value="'+(e&&e.maturityDate?attr(e.maturityDate):'')+'"></div>';
@@ -408,16 +426,17 @@ function renderBonds(){
     +'<div class="add-box"><h3>'+(e?'✎ Bond Edit karein':'+ Naya Bond Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
     +'<div class="row">'
     +'<div class="fld"><label>Tarika</label><select id="bd-mode" onchange="bondMode=this.value;render()">'
-    +'<option value="fixed"'+(bondMode==='fixed'?' selected':'')+'>Fix byaaj + maturity</option>'
+    +'<option value="fixed"'+(bondMode==='fixed'?' selected':'')+'>Fix byaaj % + maturity</option>'
+    +'<option value="fixedpay"'+(bondMode==='fixedpay'?' selected':'')+'>Fixed monthly payout (fix rakam/mahina)</option>'
     +'<option value="trade"'+(bondMode==='trade'?' selected':'')+'>Tradeable (market price)</option></select></div>'
     +'<div class="fld"><label>Bond ka naam</label><input id="bd-name" value="'+(e?attr(e.name):'')+'" placeholder="jaise: NHAI 8.5% 2032" style="width:220px"></div>'
     +fields
     +'<div class="fld"><label>Kharida (date)</label><input id="bd-dt" type="date" value="'+(e?attr(e.buyDate):'')+'"></div>'
     +'<div class="fld"><label>Note (optional)</label><input id="bd-note" value="'+(e?attr(e.note):'')+'" placeholder="demat / issuer" style="width:120px"></div>'
     +'<button class="add-btn" onclick="saveBond()">'+(e?'Save':'Add')+'</button></div>'
-    +'<div class="note">'+(isTrade?'Market bond: Current Value haath se update karo — P/L apne-aap.':'Byaaj aaj ki tareekh tak apne-aap judta hai; Maturity Date se "kul kitna milega" bhi dikhega.')+'</div></div>';
+    +'<div class="note">'+(isTrade?'Market bond: Current Value haath se update karo — P/L apne-aap.':isPay?'Jaise: ₹40,000 dala, har mahine ₹350 aata hai, ant me principal wapas. "Kitne mahine" me 0 daalo agar tenure fix nahi hai.':'Byaaj aaj ki tareekh tak apne-aap judta hai; Maturity Date se "kul kitna milega" bhi dikhega.')+'</div></div>';
 }
-function startEditBond(id){editBond=id;editStock=editMf=editLoan=null;const b=state.bonds.find(x=>x.id===id);bondMode=b.btype==='trade'?'trade':'fixed';render();}
+function startEditBond(id){editBond=id;editStock=editMf=editLoan=null;const b=state.bonds.find(x=>x.id===id);bondMode=b.btype||'fixed';render();}
 function saveBond(){
   const name=document.getElementById('bd-name').value.trim();
   const amt=+document.getElementById('bd-amt').value;
@@ -428,12 +447,16 @@ function saveBond(){
   if(bondMode==='trade'){
     const cur=document.getElementById('bd-cur').value;
     obj={name,amount:amt,buyDate:dt,note,btype:'trade',currentValue:(cur===''?null:+cur)};
+  }else if(bondMode==='fixedpay'){
+    const ma=+document.getElementById('bd-monthly').value;
+    if(!ma){toast('Har mahine kitna milta hai, wo bharein');return;}
+    obj={name,amount:amt,buyDate:dt,note,btype:'fixedpay',monthlyAmount:ma,months:+document.getElementById('bd-months').value||0};
   }else{
     const rate=+document.getElementById('bd-rate').value;
     if(!rate){toast('Byaaj % bharein');return;}
     obj={name,amount:amt,buyDate:dt,note,btype:'fixed',rate,freq:document.getElementById('bd-freq').value,maturityDate:document.getElementById('bd-mat').value};
   }
-  if(editBond){const b=state.bonds.find(x=>x.id===editBond);['rate','freq','maturityDate','currentValue'].forEach(k=>delete b[k]);Object.assign(b,obj);editBond=null;}
+  if(editBond){const b=state.bonds.find(x=>x.id===editBond);['rate','freq','maturityDate','currentValue','monthlyAmount','months'].forEach(k=>delete b[k]);Object.assign(b,obj);editBond=null;}
   else{obj.id=uid();state.bonds.push(obj);}
   bondMode='fixed';saveState();render();toast('Bond save ho gaya');
 }
