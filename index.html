@@ -73,7 +73,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v5</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v6</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -189,17 +189,33 @@ function renderStocks(){
     +'<button class="add-btn" onclick="saveStock()">'+(e?'Save':'Add')+'</button></div>'
     +'<div class="note">"Live Rates Update" dabate hi aaj ka price aa jayega.</div></div>';
 }
+const STOCKS=[
+{n:'Reliance Industries',s:'RELIANCE'},{n:'Tata Consultancy Services (TCS)',s:'TCS'},{n:'HDFC Bank',s:'HDFCBANK'},{n:'ICICI Bank',s:'ICICIBANK'},{n:'Infosys',s:'INFY'},{n:'Hindustan Unilever (HUL)',s:'HINDUNILVR'},{n:'State Bank of India (SBI)',s:'SBIN'},{n:'Bharti Airtel',s:'BHARTIARTL'},{n:'ITC',s:'ITC'},{n:'Kotak Mahindra Bank',s:'KOTAKBANK'},{n:'Larsen & Toubro (L&T)',s:'LT'},{n:'Axis Bank',s:'AXISBANK'},{n:'Bajaj Finance',s:'BAJFINANCE'},{n:'Bajaj Finserv',s:'BAJAJFINSV'},{n:'Asian Paints',s:'ASIANPAINT'},{n:'Maruti Suzuki',s:'MARUTI'},{n:'HCL Technologies',s:'HCLTECH'},{n:'Sun Pharmaceutical',s:'SUNPHARMA'},{n:'Titan Company',s:'TITAN'},{n:'Wipro',s:'WIPRO'},{n:'UltraTech Cement',s:'ULTRACEMCO'},{n:'Nestle India',s:'NESTLEIND'},{n:'Power Grid',s:'POWERGRID'},{n:'NTPC',s:'NTPC'},{n:'Tata Motors',s:'TATAMOTORS'},{n:'Tata Steel',s:'TATASTEEL'},{n:'JSW Steel',s:'JSWSTEEL'},{n:'Mahindra & Mahindra (M&M)',s:'M&M'},{n:'IndusInd Bank',s:'INDUSINDBK'},{n:'Adani Enterprises',s:'ADANIENT'},{n:'Adani Ports',s:'ADANIPORTS'},{n:'Adani Green Energy',s:'ADANIGREEN'},{n:'Adani Power',s:'ADANIPOWER'},{n:'HDFC Life Insurance',s:'HDFCLIFE'},{n:'HDFC AMC',s:'HDFCAMC'},{n:'SBI Life Insurance',s:'SBILIFE'},{n:'Bajaj Auto',s:'BAJAJ-AUTO'},{n:'Hero MotoCorp',s:'HEROMOTOCO'},{n:'Eicher Motors',s:'EICHERMOT'},{n:'Britannia Industries',s:'BRITANNIA'},{n:"Divi's Laboratories",s:'DIVISLAB'},{n:"Dr Reddy's Labs",s:'DRREDDY'},{n:'Cipla',s:'CIPLA'},{n:'Grasim Industries',s:'GRASIM'},{n:'Coal India',s:'COALINDIA'},{n:'ONGC',s:'ONGC'},{n:'Indian Oil (IOC)',s:'IOC'},{n:'BPCL',s:'BPCL'},{n:'GAIL India',s:'GAIL'},{n:'Tech Mahindra',s:'TECHM'},{n:'Shree Cement',s:'SHREECEM'},{n:'Pidilite Industries',s:'PIDILITIND'},{n:'Dabur India',s:'DABUR'},{n:'Godrej Consumer',s:'GODREJCP'},{n:'Avenue Supermarts (DMart)',s:'DMART'},{n:'One97 (Paytm)',s:'PAYTM'},{n:'FSN E-Commerce (Nykaa)',s:'NYKAA'},{n:'Vedanta',s:'VEDL'},{n:'Hindalco Industries',s:'HINDALCO'},{n:'LTIMindtree',s:'LTIM'},{n:'SBI Cards',s:'SBICARD'},{n:'Bank of Baroda',s:'BANKBARODA'},{n:'Punjab National Bank (PNB)',s:'PNB'},{n:'Canara Bank',s:'CANBK'},{n:'InterGlobe (IndiGo)',s:'INDIGO'},{n:'DLF',s:'DLF'},{n:'Ambuja Cements',s:'AMBUJACEM'},{n:'ACC',s:'ACC'},{n:'Havells India',s:'HAVELLS'},{n:'Siemens',s:'SIEMENS'},{n:'ABB India',s:'ABB'},{n:'Bosch',s:'BOSCHLTD'},{n:'Berger Paints',s:'BERGEPAINT'},{n:'Marico',s:'MARICO'},{n:'Colgate-Palmolive',s:'COLPAL'},{n:'Trent',s:'TRENT'},{n:'Bharat Electronics (BEL)',s:'BEL'},{n:'Hindustan Aeronautics (HAL)',s:'HAL'},{n:'Bharat Forge',s:'BHARATFORG'},{n:'Page Industries',s:'PAGEIND'},{n:'Muthoot Finance',s:'MUTHOOTFIN'},{n:'Cholamandalam Finance',s:'CHOLAFIN'},{n:'ICICI Prudential Life',s:'ICICIPRULI'},{n:'ICICI Lombard',s:'ICICIGI'},{n:'Yes Bank',s:'YESBANK'},{n:'IDFC First Bank',s:'IDFCFIRSTB'},{n:'Federal Bank',s:'FEDERALBNK'},{n:'Tata Power',s:'TATAPOWER'},{n:'Tata Consumer Products',s:'TATACONSUM'},{n:'Apollo Hospitals',s:'APOLLOHOSP'},{n:'Max Healthcare',s:'MAXHEALTH'},{n:'Lupin',s:'LUPIN'},{n:'Aurobindo Pharma',s:'AUROPHARMA'},{n:'Torrent Pharma',s:'TORNTPHARM'},{n:'Biocon',s:'BIOCON'},{n:'Samvardhana Motherson',s:'MOTHERSON'},{n:'Jindal Steel & Power',s:'JINDALSTEL'},{n:'SAIL',s:'SAIL'},{n:'NMDC',s:'NMDC'},{n:'Container Corp (CONCOR)',s:'CONCOR'},{n:'Petronet LNG',s:'PETRONET'},{n:'Indian Railway Finance (IRFC)',s:'IRFC'},{n:'IRCTC',s:'IRCTC'},{n:'REC',s:'RECLTD'},{n:'Power Finance (PFC)',s:'PFC'},{n:'LIC',s:'LICI'},{n:'Zydus Lifesciences',s:'ZYDUSLIFE'},{n:'Persistent Systems',s:'PERSISTENT'},{n:'Coforge',s:'COFORGE'},{n:'Mphasis',s:'MPHASIS'},{n:'Polycab India',s:'POLYCAB'},{n:'Astral',s:'ASTRAL'},{n:'Balkrishna Industries',s:'BALKRISIND'}
+];
 let stockSel=null,stockTimer=null,stockResults=[];
+function localStockMatch(q){
+  const toks=q.toLowerCase().split(/\s+/).filter(Boolean);
+  return STOCKS.filter(x=>{const hay=(x.n+' '+x.s).toLowerCase();return toks.every(t=>hay.includes(t));}).map(x=>({symbol:x.s,exch:'NSE',name:x.n}));
+}
+function renderStockResults(list){
+  const box=document.getElementById('stk-results');if(!box)return;
+  if(!list.length){box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Nahi mila — niche Symbol khud daalein</div></div>';return;}
+  stockResults=list.slice(0,30);
+  box.innerHTML='<div class="search-results">'+stockResults.map((x,i)=>'<div data-i="'+i+'">'+escapeHtml(x.name)+' <span style="color:var(--muted)">· '+x.symbol+' ('+x.exch+')</span></div>').join('')+'</div>';
+  box.querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{const x=stockResults[+el.dataset.i];pickStock(x.symbol,x.exch);}));
+}
 function stockSearch(q){
   clearTimeout(stockTimer);q=q.trim();const box=document.getElementById('stk-results');
   if(q.length<2){box.innerHTML='';return;}
-  box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Dhoond rahe hain…</div></div>';
+  const local=localStockMatch(q);
+  renderStockResults(local);
   stockTimer=setTimeout(async()=>{
-    let r=[];try{const res=await fetch('/api/stock-search?q='+encodeURIComponent(q));if(res.ok){const j=await res.json();if(Array.isArray(j))r=j;}}catch(e){box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Search abhi nahi chala — Symbol khud daalein</div></div>';return;}
-    stockResults=r.slice(0,30);
-    if(!stockResults.length){box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Nahi mila</div></div>';return;}
-    box.innerHTML='<div class="search-results">'+stockResults.map((x,i)=>'<div data-i="'+i+'">'+escapeHtml(x.name)+' <span style="color:var(--muted)">· '+x.symbol+' ('+x.exch+')</span></div>').join('')+'</div>';
-    box.querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{const x=stockResults[+el.dataset.i];pickStock(x.symbol,x.exch);}));
+    try{const res=await fetch('/api/stock-search?q='+encodeURIComponent(q));
+      if(res.ok){const j=await res.json();if(Array.isArray(j)&&j.length){
+        const seen=new Set(local.map(x=>x.symbol));
+        renderStockResults(local.concat(j.filter(x=>!seen.has(x.symbol))));
+      }}
+    }catch(e){}
   },300);
 }
 function pickStock(sym,exch){document.getElementById('stk-sym').value=sym;document.getElementById('stk-exch').value=exch;document.getElementById('stk-results').innerHTML='';document.getElementById('stk-search').value=sym;}
