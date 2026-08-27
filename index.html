@@ -20,6 +20,8 @@
   header .sub{color:var(--muted);font-size:13px}
   .refresh-btn{background:var(--brass);color:#1a1400;border:none;padding:9px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:.15s}
   .refresh-btn:hover{filter:brightness(1.08)}.refresh-btn:disabled{opacity:.55;cursor:wait}
+  .sec-btn{background:var(--surface2);color:var(--text);border:1px solid var(--line);padding:9px 14px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+  .sec-btn:hover{border-color:var(--brass);color:var(--brass)}
   .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
   .card .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
@@ -71,10 +73,14 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v4</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v5</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
-    <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">↻ Live Rates Update</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="sec-btn" onclick="exportData()">⬇ Backup</button>
+      <label class="sec-btn" style="cursor:pointer">⬆ Restore<input type="file" accept="application/json" style="display:none" onchange="importData(this)"></label>
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">↻ Live Rates Update</button>
+    </div>
   </header>
   <div id="app"><div class="loading">Data load ho raha hai…</div></div>
 </div>
@@ -332,6 +338,23 @@ function saveLoan(){
 
 function cancelEdit(){editStock=editMf=editLoan=null;loanMode='simple';render();}
 function delItem(kind,id){state[kind]=state[kind].filter(x=>x.id!==id);saveState();render();}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='portfolio-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  toast('Backup file download ho gayi');
+}
+function importData(input){
+  const f=input.files&&input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(d&&(d.stocks||d.mfs||d.loans)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[]};saveState();render();toast('Backup restore ho gaya');}
+    else toast('Ye sahi backup file nahi lagti');
+  }catch(e){toast('File padhi nahi gayi');}};
+  r.readAsText(f);input.value='';
+}
 
 loadState();render();
 </script>
