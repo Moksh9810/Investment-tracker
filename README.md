@@ -1,46 +1,53 @@
-# Portfolio Bahi-Khata — Live version (deploy guide)
+# Portfolio Bahi-Khata (v9) — Multi-user + Admin
 
-Ye app aapke stocks, mutual funds aur loan/byaaj ka hisaab rakhta hai, aur
-live NAV/price khud le aata hai. Ye "hosted" version banane ke liye niche
-diye 5 kadam follow karein (~15 minute, sab free).
+Stocks, Mutual Funds, Bonds, Loans/Interest — sab ek jagah.
+Ab har koi apni ID banata hai, sirf apna portfolio dekhता hai,
+aur admin ko sabke accounts dikhte hain (dekh + badal sakta hai).
 
-## Kya-kya file hai
-- `index.html` — poora app (frontend)
-- `api/mf-search.js` — fund search (AMFI official data)
-- `api/mf.js` — ek fund ka aaj ka NAV
-- `api/stock.js` — stock ka live price (Yahoo Finance)
+## Hisse
+- index.html            → app (frontend)
+- api/                  → live price/NAV laane ke server-hisse (Vercel)
+- supabase-setup.sql    → database + login setup (ek baar chalana hai)
 
-## Deploy kaise karein (Vercel — free, coding nahi)
+## SETUP — 3 hisse (~20-30 min, sab free)
 
-### Kadam 1: GitHub account
-1. https://github.com par jaakar free account banayein.
-2. Login ke baad upar-right "+" → **New repository**.
-3. Naam dein (jaise `portfolio-bahikhata`), **Public** rehne dein, **Create repository**.
+### A) Supabase (login + cloud database)
+1. https://supabase.com → free account → **New project** banayein
+   (project name kuch bhi; database password note kar lein).
+2. Left menu → **SQL Editor** → **New query** → is folder ki
+   `supabase-setup.sql` ka poora text paste karein → **Run**.
+3. Left menu → **Project Settings → API**. Yahan 2 cheez milengi:
+   - **Project URL**   (jaise https://abcd1234.supabase.co)
+   - **anon public key** (lamba text)
+4. `index.html` kholein, sabse upar `<script>` me ye 2 line badlein:
+       const SUPABASE_URL='https://abcd1234.supabase.co';
+       const SUPABASE_ANON_KEY='yahan-anon-public-key';
+   (apni asli values daalein).
+5. (Aasaan login ke liye) Supabase → **Authentication → Providers/Settings**
+   me "Confirm email" band kar dein — to sign-up ke turant baad login ho jayega.
+   (Chahein to on rakhein; tab user ko email verify karna padega.)
 
-### Kadam 2: File upload
-1. Naye repo me link "**uploading an existing file**" par click karein.
-2. Is folder ki saari files drag-and-drop karein — **`api` folder samet**
-   (taaki `api/mf.js` waala structure bana rahe).
-3. Niche **Commit changes** dabayein.
+### B) Vercel (app host karna) — pehle jaisa
+1. Badli hui files GitHub repo par upload karein
+   (Add file → Upload files → saari files `api` folder samet → Commit).
+2. Vercel apne-aap deploy kar dega. App ka pakka link kholein.
 
-### Kadam 3: Vercel se jodein
-1. https://vercel.com par jaayein → **Continue with GitHub** (free).
-2. **Add New… → Project** → apna `portfolio-bahikhata` repo **Import** karein.
-3. Kuch settings badalne ki zaroorat nahi — seedhe **Deploy** dabayein.
+### C) Khud ko admin banayein
+1. App par apne email se **Sign up** karein, phir **Login**.
+2. Supabase → SQL Editor me ye chalayein (apna email daal kar):
+       update public.profiles set is_admin = true
+       where email = 'aapka-email@example.com';
+3. App refresh karein — ab upar "ADMIN" aur ek "👥 Accounts" tab dikhega.
 
-### Kadam 4: Live URL
-- 1 minute me Vercel ek link dega, jaise
-  `https://portfolio-bahikhata.vercel.app`
-- Ye link phone/computer kisi bhi browser me kholein — app live chalega,
-  MF search aur "Live Rates Update" dono kaam karenge.
-
-### Kadam 5: Roz ka istemaal
-- Link ko phone me bookmark/home-screen par laga lein.
-- Data aapke apne browser me save hota hai (localStorage).
+## Istemaal
+- Har naya user: app par Sign up → Login → apna portfolio.
+- Data cloud me safe — kisi bhi device se login karke wahi data.
+- Admin: "👥 Accounts" tab me sabki list + net worth. Kisi ko
+  "Open" karke uska portfolio dekh/badal sakte hain; "← mera account"
+  se wapas.
 
 ## Note
-- MF NAV AMFI se roz shaam ko update hota hai — din me ek baar
-  "Live Rates Update" kaafi hai.
-- Stock price market hours me live rehta hai.
-- Data sirf usi browser me dikhega jisme entry ki. Backup chahiye to
-  bataiye — main export/import (file me save) ka feature jod dunga.
+- anon key public hoti hai — ye theek hai, kyunki database ki suraksha
+  Row Level Security (SQL me set ki gayi) sambhalti hai: koi apna hi
+  data dekh/badal sakta hai, admin sabka.
+- Live price/NAV wale server-hisse (api/) pehle jaise kaam karte hain.

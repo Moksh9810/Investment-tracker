@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{--ink:#0E1726;--surface:#16223A;--surface2:#1D2B47;--line:#27395C;--text:#E8EDF5;--muted:#8A9BB8;--brass:#C9A227;--brass-dim:#8f7522;--gain:#3DD68C;--loss:#F16C6C;--radius:14px;}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -73,10 +74,10 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v8</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v9</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="sec-btn" onclick="exportData()">⬇ Backup</button>
       <label class="sec-btn" style="cursor:pointer">⬆ Restore<input type="file" accept="application/json" style="display:none" onchange="importData(this)"></label>
       <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">↻ Live Rates Update</button>
@@ -87,13 +88,43 @@
 <div class="toast" id="toast"></div>
 
 <script>
+/* =====================================================================
+   ██  YAHAN APNI 2 VALUE DAALEIN — sirf ye 2 line badalni hain  ██
+   Supabase → Settings → API Keys se:
+   1) Project URL       niche pehli line me
+   2) Publishable key   niche doosri line me
+   (single quotes '...' aur ; waise hi rehne dein)
+   ===================================================================== */
+const SUPABASE_URL     = 'YAHAN_PROJECT_URL_DAALO';       // jaise: https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = 'YAHAN_PUBLISHABLE_KEY_DAALO';  // jaise: sb_publishable_xxxxx
+/* ===================================================================== */
+
+let sb=null;
 let state={stocks:[],mfs:[],loans:[],bonds:[]};
 let activeTab='stocks';
 let editStock=null, editMf=null, editLoan=null, editBond=null;
 let loanMode='simple', bondMode='fixed';
+let myId=null,myEmail='',myIsAdmin=false,viewingUserId=null,viewingEmail='',adminUsers=[];
+let saveTimer=null;
 const KEY='portfolio-bahikhata-v1';
-function loadState(){try{const raw=localStorage.getItem(KEY);if(raw)state=JSON.parse(raw);}catch(e){}state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
-function saveState(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast('Save nahi ho paya');}}
+function normalize(){state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
+function saveState(){
+  normalize();
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+  if(sb&&viewingUserId){
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(async()=>{
+      const {error}=await sb.from('portfolios').upsert({user_id:viewingUserId,data:state,updated_at:new Date().toISOString()});
+      if(error)toast('Cloud save fail: '+error.message);
+    },600);
+  }
+}
+async function loadPortfolio(uid){
+  const {data,error}=await sb.from('portfolios').select('data').eq('user_id',uid).maybeSingle();
+  if(error){toast('Load fail: '+error.message);state={stocks:[],mfs:[],loans:[],bonds:[]};}
+  else{state=(data&&data.data)||{stocks:[],mfs:[],loans:[],bonds:[]};}
+  normalize();
+}
 
 const inr=n=>'₹'+(isFinite(n)?Math.round(n).toLocaleString('en-IN'):'0');
 const inr2=n=>'₹'+(isFinite(n)?n.toLocaleString('en-IN',{maximumFractionDigits:2}):'0');
@@ -156,20 +187,23 @@ async function refreshAll(){
   toast(msg);
 }
 
-function totals(){
+function computeTotals(st){
+  st=st||{};
   let sInv=0,sCur=0,mInv=0,mCur=0,lPrin=0,lInt=0,bInv=0,bCur=0;
-  state.stocks.forEach(s=>{sInv+=s.qty*s.buyPrice;sCur+=s.qty*(s.currentPrice||s.buyPrice);});
-  state.mfs.forEach(m=>{mInv+=m.units*m.buyNav;mCur+=m.units*(m.currentNav||m.buyNav);});
-  state.loans.forEach(l=>{const c=loanInterest(l);lPrin+=(+l.principal||0);lInt+=c.interest;});
-  state.bonds.forEach(b=>{const c=bondCalc(b);bInv+=c.invested;bCur+=c.current;});
+  (st.stocks||[]).forEach(s=>{sInv+=s.qty*s.buyPrice;sCur+=s.qty*(s.currentPrice||s.buyPrice);});
+  (st.mfs||[]).forEach(m=>{mInv+=m.units*m.buyNav;mCur+=m.units*(m.currentNav||m.buyNav);});
+  (st.loans||[]).forEach(l=>{const c=loanInterest(l);lPrin+=(+l.principal||0);lInt+=c.interest;});
+  (st.bonds||[]).forEach(b=>{const c=bondCalc(b);bInv+=c.invested;bCur+=c.current;});
   const invested=sInv+mInv+lPrin+bInv,current=sCur+mCur+lPrin+lInt+bCur;
   return {sInv,sCur,mInv,mCur,lPrin,lInt,bInv,bCur,bGain:bCur-bInv,invested,current,net:current-invested,stockPL:sCur-sInv,mfPL:mCur-mInv};
 }
+function totals(){return computeTotals(state);}
 
 function render(){
   const t=totals(),netPct=t.invested?(t.net/t.invested*100):0;
   document.getElementById('app').innerHTML=
-    '<div class="pl-strip"><div><div class="net-lbl">Total Net Profit / Loss</div>'
+    acctBar()
+    +'<div class="pl-strip"><div><div class="net-lbl">Total Net Profit / Loss</div>'
     +'<div class="net '+plClass(t.net)+'">'+plSign(t.net)+inr(t.net)+' <span style="font-size:16px">('+plSign(netPct)+netPct.toFixed(2)+'%)</span></div></div>'
     +'<div class="breakdown"><div>Invested<b class="num">'+inr(t.invested)+'</b></div><div>Current Value<b class="num">'+inr(t.current)+'</b></div></div></div>'
     +'<div class="summary">'
@@ -178,14 +212,15 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+'</div>'
+    +'<div class="tabs">'+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+(myIsAdmin?tabBtn('admin','👥 Accounts'):'')+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
     +'<div class="panel '+(activeTab==='bonds'?'active':'')+'">'+renderBonds()+'</div>'
-    +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>';
+    +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>'
+    +(myIsAdmin?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'');
 }
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
-function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;render();}
+function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;if(id==='admin'){loadAdminUsers();}else{render();}}
 
 /* ---------- STOCKS ---------- */
 function renderStocks(){
@@ -482,7 +517,79 @@ function importData(input){
   r.readAsText(f);input.value='';
 }
 
-loadState();render();
+function acctBar(){
+  return '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:13px;color:var(--muted)">'
+    +'<div>Logged in: <b style="color:var(--text)">'+escapeHtml(myEmail)+'</b>'+(myIsAdmin?' <span class="ver" style="border-color:var(--gain);color:var(--gain)">ADMIN</span>':'')+'</div>'
+    +'<div>'+(viewingUserId&&viewingUserId!==myId?'<span style="color:var(--brass)">Dekh rahe ho: '+escapeHtml(viewingEmail)+'</span> <span class="cancel-link" onclick="backToMine()">← mera account</span> &nbsp;·&nbsp; ':'')+'<span class="cancel-link" onclick="doLogout()">Logout</span></div></div>';
+}
+
+function renderAuth(){
+  const ha=document.getElementById('hdrActions');if(ha)ha.style.display='none';
+  document.getElementById('app').innerHTML=
+    '<div class="add-box" style="max-width:440px;margin:24px auto">'
+    +'<h3>Login / Sign up</h3>'
+    +'<div class="fld" style="margin-bottom:10px"><label>Email</label><input id="au-email" type="email" placeholder="you@email.com" style="width:100%"></div>'
+    +'<div class="fld" style="margin-bottom:14px"><label>Password</label><input id="au-pass" type="password" placeholder="6+ akshar" style="width:100%"></div>'
+    +'<div style="display:flex;gap:8px"><button class="add-btn" onclick="doLogin()">Login</button><button class="sec-btn" onclick="doSignup()">Naya account banao</button></div>'
+    +'<div class="note">Naya account banane ke baad login karein. (Email verify Supabase setting par nirbhar hai.)</div></div>';
+}
+async function doSignup(){
+  const email=document.getElementById('au-email').value.trim(),password=document.getElementById('au-pass').value;
+  if(!email||password.length<6){toast('Email aur 6+ akshar ka password daalein');return;}
+  const {error}=await sb.auth.signUp({email,password});
+  if(error){toast(error.message);return;}
+  toast('Account ban gaya! Ab Login dabayein.');
+}
+async function doLogin(){
+  const email=document.getElementById('au-email').value.trim(),password=document.getElementById('au-pass').value;
+  if(!email||!password){toast('Email aur password daalein');return;}
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){toast(error.message);return;}
+  await afterLogin(data.session);
+}
+async function doLogout(){await sb.auth.signOut();myId=null;viewingUserId=null;state={stocks:[],mfs:[],loans:[],bonds:[]};renderAuth();}
+
+async function loadAdminUsers(){
+  render();
+  try{
+    const [pr,po]=await Promise.all([
+      sb.from('profiles').select('id,email,is_admin').order('email'),
+      sb.from('portfolios').select('user_id,data')
+    ]);
+    const pmap={};(po.data||[]).forEach(p=>pmap[p.user_id]=p.data||{});
+    adminUsers=(pr.data||[]).map(u=>({id:u.id,email:u.email,is_admin:u.is_admin,tot:computeTotals(pmap[u.id]||{})}));
+  }catch(e){adminUsers=[];}
+  render();
+}
+function renderAdmin(){
+  if(!adminUsers.length)return '<div class="empty">Users load ho rahe hain… (ya abhi koi user nahi)</div>';
+  const rows=adminUsers.map(u=>'<tr>'
+    +'<td><span class="name">'+escapeHtml(u.email||'—')+'</span>'+(u.is_admin?' <span class="tag" style="color:var(--gain);display:inline">admin</span>':'')+'</td>'
+    +'<td class="num">'+inr(u.tot.current)+'</td>'
+    +'<td class="num '+plClass(u.tot.net)+'">'+plSign(u.tot.net)+inr(u.tot.net)+'</td>'
+    +'<td><button class="edit" onclick="openUser(\''+u.id+'\',\''+escapeHtml(u.email||'')+'\')">Open</button></td></tr>').join('');
+  return '<table class="tbl"><thead><tr><th>User</th><th>Net Worth</th><th>Profit/Loss</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="note">Kisi user ko "Open" karke uska poora portfolio dekh/badal sakte ho — badalne par usi ke account me save hoga. Upar "← mera account" se wapas.</div>';
+}
+function openUser(uid,email){viewingUserId=uid;viewingEmail=email;loadPortfolio(uid).then(()=>{activeTab='stocks';render();});}
+function backToMine(){viewingUserId=myId;viewingEmail=myEmail;loadPortfolio(myId).then(()=>{activeTab='stocks';render();});}
+
+async function afterLogin(session){
+  myId=session.user.id;myEmail=session.user.email;
+  const ha=document.getElementById('hdrActions');if(ha)ha.style.display='flex';
+  try{const r=await sb.from('profiles').select('is_admin').eq('id',myId).maybeSingle();myIsAdmin=!!(r.data&&r.data.is_admin);}catch(e){myIsAdmin=false;}
+  viewingUserId=myId;viewingEmail=myEmail;
+  await loadPortfolio(myId);
+  activeTab='stocks';render();
+}
+async function initApp(){
+  if(SUPABASE_URL.indexOf('YAHAN')>-1){document.getElementById('app').innerHTML='<div class="add-box" style="max-width:520px;margin:24px auto"><h3>Ek chhota setup baaki hai</h3><div class="note">index.html me SUPABASE_URL aur SUPABASE_ANON_KEY apni values se badlein (README me steps hain), phir dobara deploy karein.</div></div>';return;}
+  sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){await afterLogin(session);}else{renderAuth();}
+  sb.auth.onAuthStateChange((_e,s)=>{if(s&&!myId){afterLogin(s);}if(!s&&myId){myId=null;renderAuth();}});
+}
+initApp();
 </script>
 </body>
 </html>
