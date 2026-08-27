@@ -22,7 +22,7 @@
   .refresh-btn:hover{filter:brightness(1.08)}.refresh-btn:disabled{opacity:.55;cursor:wait}
   .sec-btn{background:var(--surface2);color:var(--text);border:1px solid var(--line);padding:9px 14px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif}
   .sec-btn:hover{border-color:var(--brass);color:var(--brass)}
-  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:14px}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
   .card .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
   .card .big{font-size:24px;font-weight:700;font-family:'Space Grotesk',sans-serif}
@@ -73,7 +73,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v6</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v7</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -87,12 +87,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let state={stocks:[],mfs:[],loans:[]};
+let state={stocks:[],mfs:[],loans:[],bonds:[]};
 let activeTab='stocks';
-let editStock=null, editMf=null, editLoan=null;
-let loanMode='simple';
+let editStock=null, editMf=null, editLoan=null, editBond=null;
+let loanMode='simple', bondMode='fixed';
 const KEY='portfolio-bahikhata-v1';
-function loadState(){try{const raw=localStorage.getItem(KEY);if(raw)state=JSON.parse(raw);}catch(e){}state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];}
+function loadState(){try{const raw=localStorage.getItem(KEY);if(raw)state=JSON.parse(raw);}catch(e){}state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
 function saveState(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast('Save nahi ho paya');}}
 
 const inr=n=>'₹'+(isFinite(n)?Math.round(n).toLocaleString('en-IN'):'0');
@@ -121,6 +121,20 @@ function loanInterest(l){
   return {mode:'accrue',interest:amt-P,total:amt,days:daysBetween(l.startDate)};
 }
 
+function bondCalc(b){
+  const face=+b.amount||0;
+  if(b.btype==='trade'){
+    const cur=(b.currentValue!=null&&b.currentValue!==''?+b.currentValue:face);
+    return {btype:'trade',invested:face,current:cur,pl:cur-face,interestToDate:0};
+  }
+  const r=(+b.rate||0)/100, tEl=yearsBetween(b.buyDate);
+  const tMat=b.maturityDate?Math.max(0,(new Date(b.maturityDate)-new Date(b.buyDate))/(1000*60*60*24*365.25)):null;
+  let interestToDate,totalInterest;
+  if(b.freq==='cumulative'){interestToDate=face*(Math.pow(1+r,tEl)-1);totalInterest=tMat!=null?face*(Math.pow(1+r,tMat)-1):null;}
+  else{interestToDate=face*r*tEl;totalInterest=tMat!=null?face*r*tMat:null;}
+  return {btype:'fixed',invested:face,current:face+interestToDate,interestToDate,totalInterest,tMat,pl:interestToDate};
+}
+
 async function fetchMfNav(code){const r=await fetch('/api/mf?code='+encodeURIComponent(code));const j=await r.json();if(isFinite(j.nav))return j.nav;throw new Error('no nav');}
 async function fetchStockPrice(symbol,exch){const r=await fetch('/api/stock?symbol='+encodeURIComponent(symbol)+'&exch='+exch);const j=await r.json();if(isFinite(j.price))return j.price;throw new Error('no price');}
 
@@ -136,12 +150,13 @@ async function refreshAll(){
 }
 
 function totals(){
-  let sInv=0,sCur=0,mInv=0,mCur=0,lPrin=0,lInt=0;
+  let sInv=0,sCur=0,mInv=0,mCur=0,lPrin=0,lInt=0,bInv=0,bCur=0;
   state.stocks.forEach(s=>{sInv+=s.qty*s.buyPrice;sCur+=s.qty*(s.currentPrice||s.buyPrice);});
   state.mfs.forEach(m=>{mInv+=m.units*m.buyNav;mCur+=m.units*(m.currentNav||m.buyNav);});
   state.loans.forEach(l=>{const c=loanInterest(l);lPrin+=(+l.principal||0);lInt+=c.interest;});
-  const invested=sInv+mInv+lPrin,current=sCur+mCur+lPrin+lInt;
-  return {sInv,sCur,mInv,mCur,lPrin,lInt,invested,current,net:current-invested,stockPL:sCur-sInv,mfPL:mCur-mInv};
+  state.bonds.forEach(b=>{const c=bondCalc(b);bInv+=c.invested;bCur+=c.current;});
+  const invested=sInv+mInv+lPrin+bInv,current=sCur+mCur+lPrin+lInt+bCur;
+  return {sInv,sCur,mInv,mCur,lPrin,lInt,bInv,bCur,bGain:bCur-bInv,invested,current,net:current-invested,stockPL:sCur-sInv,mfPL:mCur-mInv};
 }
 
 function render(){
@@ -153,15 +168,17 @@ function render(){
     +'<div class="summary">'
     +'<div class="card"><div class="lbl">Stocks</div><div class="big num">'+inr(t.sCur)+'</div><div class="sm num '+plClass(t.stockPL)+'">'+plSign(t.stockPL)+inr(t.stockPL)+'</div></div>'
     +'<div class="card"><div class="lbl">Mutual Funds</div><div class="big num">'+inr(t.mCur)+'</div><div class="sm num '+plClass(t.mfPL)+'">'+plSign(t.mfPL)+inr(t.mfPL)+'</div></div>'
+    +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('loans','Loans / Interest')+'</div>'
+    +'<div class="tabs">'+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
+    +'<div class="panel '+(activeTab==='bonds'?'active':'')+'">'+renderBonds()+'</div>'
     +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>';
 }
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
-function switchTab(id){activeTab=id;editStock=editMf=editLoan=null;render();}
+function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;render();}
 
 /* ---------- STOCKS ---------- */
 function renderStocks(){
@@ -352,7 +369,77 @@ function saveLoan(){
   loanMode='simple';saveState();render();toast('Loan save ho gaya');
 }
 
-function cancelEdit(){editStock=editMf=editLoan=null;loanMode='simple';render();}
+/* ---------- BONDS ---------- */
+function renderBonds(){
+  const rows=state.bonds.map(b=>{
+    const c=bondCalc(b);
+    if(c.btype==='trade'){
+      const pct=c.invested?(c.pl/c.invested*100):0;
+      return '<tr><td><span class="name">'+escapeHtml(b.name)+'</span><span class="tag">Tradeable'+(b.note?' · '+escapeHtml(b.note):'')+'</span></td>'
+        +'<td class="num">'+inr(c.invested)+'</td>'
+        +'<td class="num"><input class="price-in num" type="number" step="0.01" value="'+(b.currentValue!=null&&b.currentValue!==''?b.currentValue:c.invested)+'" onchange="setBondValue(\''+b.id+'\',this.value)"></td>'
+        +'<td class="num '+plClass(c.pl)+'">'+plSign(c.pl)+inr(c.pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
+        +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
+    }
+    const fl=b.freq==='cumulative'?'Cumulative':(b.freq==='monthly'?'Monthly':b.freq==='quarterly'?'Quarterly':b.freq==='halfyearly'?'Half-yearly':'Yearly');
+    const mat=b.maturityDate?' · maturity '+b.maturityDate:'';
+    const totCol=c.totalInterest!=null?inr(b.amount+c.totalInterest):'—';
+    return '<tr><td><span class="name">'+escapeHtml(b.name)+'</span><span class="tag">'+b.rate+'% · '+fl+mat+(b.note?' · '+escapeHtml(b.note):'')+'</span></td>'
+      +'<td class="num">'+inr(c.invested)+'</td><td class="num gain">'+inr(c.interestToDate)+'</td><td class="num">'+totCol+'</td>'
+      +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
+  }).join('');
+  const e=editBond?state.bonds.find(x=>x.id===editBond):null;
+  const isTrade=bondMode==='trade';
+  const head=isTrade
+    ?'<thead><tr><th>Bond</th><th>Invested</th><th>Current Value</th><th>P/L</th><th></th></tr></thead>'
+    :'<thead><tr><th>Bond</th><th>Invested</th><th>Interest (aaj tak)</th><th>Maturity pe total</th><th></th></tr></thead>';
+  let fields='';
+  if(isTrade){
+    fields='<div class="fld"><label>Invested (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype==='trade'?e.amount:'')+'" placeholder="100000" style="width:120px"></div>'
+      +'<div class="fld"><label>Current Value (₹)</label><input id="bd-cur" type="number" value="'+(e&&e.btype==='trade'&&e.currentValue!=null?e.currentValue:'')+'" placeholder="abhi ka" style="width:120px"></div>';
+  }else{
+    fields='<div class="fld"><label>Invested / Face (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype!=='trade'?e.amount:'')+'" placeholder="100000" style="width:130px"></div>'
+      +'<div class="fld"><label>Byaaj % (saalana)</label><input id="bd-rate" type="number" step="0.01" value="'+(e&&e.btype!=='trade'?e.rate:'')+'" placeholder="8.5" style="width:110px"></div>'
+      +'<div class="fld"><label>Byaaj kab</label><select id="bd-freq">'
+      +['monthly:Monthly','quarterly:Quarterly','halfyearly:Half-yearly','yearly:Yearly','cumulative:Cumulative (ant me)'].map(o=>{const[v,l]=o.split(':');return '<option value="'+v+'"'+(e&&e.freq===v?' selected':'')+'>'+l+'</option>';}).join('')+'</select></div>'
+      +'<div class="fld"><label>Maturity Date</label><input id="bd-mat" type="date" value="'+(e&&e.maturityDate?attr(e.maturityDate):'')+'"></div>';
+  }
+  return '<table class="tbl">'+head+'<tbody>'+(rows||'<tr><td colspan="5" class="empty">Abhi koi bond nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Bond Edit karein':'+ Naya Bond Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+    +'<div class="row">'
+    +'<div class="fld"><label>Tarika</label><select id="bd-mode" onchange="bondMode=this.value;render()">'
+    +'<option value="fixed"'+(bondMode==='fixed'?' selected':'')+'>Fix byaaj + maturity</option>'
+    +'<option value="trade"'+(bondMode==='trade'?' selected':'')+'>Tradeable (market price)</option></select></div>'
+    +'<div class="fld"><label>Bond ka naam</label><input id="bd-name" value="'+(e?attr(e.name):'')+'" placeholder="jaise: NHAI 8.5% 2032" style="width:220px"></div>'
+    +fields
+    +'<div class="fld"><label>Kharida (date)</label><input id="bd-dt" type="date" value="'+(e?attr(e.buyDate):'')+'"></div>'
+    +'<div class="fld"><label>Note (optional)</label><input id="bd-note" value="'+(e?attr(e.note):'')+'" placeholder="demat / issuer" style="width:120px"></div>'
+    +'<button class="add-btn" onclick="saveBond()">'+(e?'Save':'Add')+'</button></div>'
+    +'<div class="note">'+(isTrade?'Market bond: Current Value haath se update karo — P/L apne-aap.':'Byaaj aaj ki tareekh tak apne-aap judta hai; Maturity Date se "kul kitna milega" bhi dikhega.')+'</div></div>';
+}
+function startEditBond(id){editBond=id;editStock=editMf=editLoan=null;const b=state.bonds.find(x=>x.id===id);bondMode=b.btype==='trade'?'trade':'fixed';render();}
+function saveBond(){
+  const name=document.getElementById('bd-name').value.trim();
+  const amt=+document.getElementById('bd-amt').value;
+  const dt=document.getElementById('bd-dt').value;
+  const note=document.getElementById('bd-note').value.trim();
+  if(!name||!amt){toast('Bond ka naam aur rakam bharein');return;}
+  let obj;
+  if(bondMode==='trade'){
+    const cur=document.getElementById('bd-cur').value;
+    obj={name,amount:amt,buyDate:dt,note,btype:'trade',currentValue:(cur===''?null:+cur)};
+  }else{
+    const rate=+document.getElementById('bd-rate').value;
+    if(!rate){toast('Byaaj % bharein');return;}
+    obj={name,amount:amt,buyDate:dt,note,btype:'fixed',rate,freq:document.getElementById('bd-freq').value,maturityDate:document.getElementById('bd-mat').value};
+  }
+  if(editBond){const b=state.bonds.find(x=>x.id===editBond);['rate','freq','maturityDate','currentValue'].forEach(k=>delete b[k]);Object.assign(b,obj);editBond=null;}
+  else{obj.id=uid();state.bonds.push(obj);}
+  bondMode='fixed';saveState();render();toast('Bond save ho gaya');
+}
+function setBondValue(id,v){const b=state.bonds.find(x=>x.id===id);if(b){b.currentValue=(v===''?null:+v);saveState();render();}}
+
+function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
 function delItem(kind,id){state[kind]=state[kind].filter(x=>x.id!==id);saveState();render();}
 
 function exportData(){
@@ -366,7 +453,7 @@ function importData(input){
   const f=input.files&&input.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
-    if(d&&(d.stocks||d.mfs||d.loans)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[]};saveState();render();toast('Backup restore ho gaya');}
+    if(d&&(d.stocks||d.mfs||d.loans||d.bonds)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[],bonds:d.bonds||[]};saveState();render();toast('Backup restore ho gaya');}
     else toast('Ye sahi backup file nahi lagti');
   }catch(e){toast('File padhi nahi gayi');}};
   r.readAsText(f);input.value='';
