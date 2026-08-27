@@ -303,7 +303,10 @@ async function addMf(){
   if(!units||!nav){toast('Units aur buy NAV bharein');return;}
   const m={id:uid(),schemeCode:code,name,units,buyNav:nav,buyDate:document.getElementById('mf-dt').value,currentNav:curnav||null};
   state.mfs.push(m); saveState(); render();
-  if(code&&!curnav){ try{ m.currentNav=await fetchMfNav(code); saveState(); render(); }catch(e){} }
+  if(code){
+    try{ m.currentNav=await fetchMfNav(code); saveState(); render(); toast('Live NAV mil gaya: '+inr2(m.currentNav)); }
+    catch(e){ if(!curnav) toast('Live NAV abhi nahi aaya — "Live Rates Update" dabayein ya NAV khud daalein'); }
+  }
   mfSel=null;
 }
 function setMfNav(id,v){const m=state.mfs.find(x=>x.id===id);if(m){m.currentNav=+v;saveState();render();}}
