@@ -8,89 +8,70 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --ink:#0E1726; --surface:#16223A; --surface2:#1D2B47; --line:#27395C;
-    --text:#E8EDF5; --muted:#8A9BB8; --brass:#C9A227; --brass-dim:#8f7522;
-    --gain:#3DD68C; --loss:#F16C6C; --radius:14px;
-  }
+  :root{--ink:#0E1726;--surface:#16223A;--surface2:#1D2B47;--line:#27395C;--text:#E8EDF5;--muted:#8A9BB8;--brass:#C9A227;--brass-dim:#8f7522;--gain:#3DD68C;--loss:#F16C6C;--radius:14px;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter',system-ui,sans-serif;background:var(--ink);color:var(--text);
-    line-height:1.5;-webkit-font-smoothing:antialiased;padding:20px 16px 80px}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--ink);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;padding:20px 16px 80px}
   .num{font-variant-numeric:tabular-nums}
   h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em}
   .wrap{max-width:1000px;margin:0 auto}
   header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
   header h1{font-size:22px}header h1 .dot{color:var(--brass)}
+  .ver{font-size:12px;color:var(--brass);border:1px solid var(--brass-dim);padding:2px 9px;border-radius:20px;vertical-align:middle;font-family:'Space Grotesk',sans-serif}
   header .sub{color:var(--muted);font-size:13px}
-  .refresh-btn{background:var(--brass);color:#1a1400;border:none;padding:9px 16px;border-radius:10px;
-    font-weight:700;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:.15s}
+  .refresh-btn{background:var(--brass);color:#1a1400;border:none;padding:9px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:.15s}
   .refresh-btn:hover{filter:brightness(1.08)}.refresh-btn:disabled{opacity:.55;cursor:wait}
   .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
   .card .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
   .card .big{font-size:24px;font-weight:700;font-family:'Space Grotesk',sans-serif}
   .card .sm{font-size:12px;margin-top:4px}
-  .pl-strip{background:linear-gradient(135deg,var(--surface2),var(--surface));border:1px solid var(--line);
-    border-radius:var(--radius);padding:18px 20px;margin-bottom:22px;display:flex;justify-content:space-between;
-    align-items:center;flex-wrap:wrap;gap:14px}
+  .pl-strip{background:linear-gradient(135deg,var(--surface2),var(--surface));border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
   .pl-strip .net{font-size:34px;font-weight:700;font-family:'Space Grotesk',sans-serif}
   .pl-strip .net-lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
-  .breakdown{display:flex;gap:22px;flex-wrap:wrap}
-  .breakdown div{font-size:12px;color:var(--muted)}
+  .breakdown{display:flex;gap:22px;flex-wrap:wrap}.breakdown div{font-size:12px;color:var(--muted)}
   .breakdown b{display:block;font-size:16px;color:var(--text);font-family:'Space Grotesk',sans-serif;margin-top:2px}
   .gain{color:var(--gain)}.loss{color:var(--loss)}
   .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
-  .tab{background:none;border:none;color:var(--muted);padding:10px 16px;cursor:pointer;font-size:14px;
-    font-weight:600;font-family:'Space Grotesk',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab{background:none;border:none;color:var(--muted);padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600;font-family:'Space Grotesk',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px}
   .tab.active{color:var(--brass);border-bottom-color:var(--brass)}
   .panel{display:none}.panel.active{display:block}
   .tbl{width:100%;border-collapse:collapse;font-size:13px}
-  .tbl th{text-align:right;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;
-    letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .tbl th{text-align:right;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line)}
   .tbl th:first-child,.tbl td:first-child{text-align:left}
   .tbl td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
   .tbl tr:hover td{background:rgba(255,255,255,.02)}
   .tbl .name{font-weight:600}.tbl .tag{color:var(--muted);font-size:11px;display:block}
-  .del{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:4px 9px;cursor:pointer;font-size:12px}
+  .edit,.del{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:4px 9px;cursor:pointer;font-size:12px}
+  .edit{margin-right:4px}.edit:hover{border-color:var(--brass);color:var(--brass)}
   .del:hover{border-color:var(--loss);color:var(--loss)}
-  .price-in{width:90px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:7px;
-    padding:5px 7px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+  .price-in{width:90px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:5px 7px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
   .empty{color:var(--muted);text-align:center;padding:30px;font-size:14px}
-  .status-dot{font-size:11px;color:var(--muted)}
   .add-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:16px}
   .add-box h3{font-size:14px;margin-bottom:12px;color:var(--brass)}
+  .cancel-link{color:var(--muted);font-size:12px;cursor:pointer;margin-left:12px;text-decoration:underline}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
   .fld{display:flex;flex-direction:column;gap:5px}
   .fld label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-  .fld input,.fld select{background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;
-    padding:8px 10px;font-size:13px;font-family:inherit}
+  .fld input,.fld select{background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
   .fld input:focus,.fld select:focus{outline:none;border-color:var(--brass)}
-  .add-btn{background:var(--surface2);color:var(--text);border:1px solid var(--brass-dim);padding:9px 18px;
-    border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;font-family:'Space Grotesk',sans-serif}
+  .add-btn{background:var(--surface2);color:var(--text);border:1px solid var(--brass-dim);padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;font-family:'Space Grotesk',sans-serif}
   .add-btn:hover{background:var(--brass);color:#1a1400}
-  .search-results{position:absolute;background:var(--surface2);border:1px solid var(--line);border-radius:8px;
-    margin-top:2px;max-height:220px;overflow:auto;z-index:20;width:340px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  .search-results{position:absolute;background:var(--surface2);border:1px solid var(--line);border-radius:8px;margin-top:2px;max-height:220px;overflow:auto;z-index:20;width:340px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
   .search-results div{padding:9px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--line)}
   .search-results div:hover{background:var(--brass);color:#1a1400}
-  .mf-search-wrap{position:relative}
+  .srch-wrap{position:relative}
   .note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
   .loading{color:var(--muted);font-size:13px;padding:20px;text-align:center}
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);
-    border:1px solid var(--brass-dim);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;
-    opacity:0;transition:.3s;pointer-events:none;z-index:50}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--brass-dim);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:50}
   .toast.show{opacity:1}
-  @media(max-width:720px){
-    .summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}
-    .tbl{font-size:12px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}
-    body{padding:14px 10px 80px}
-  }
+  @media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}.tbl{font-size:12px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}body{padding:14px 10px 80px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span style="font-size:12px;color:var(--brass);border:1px solid var(--brass-dim);padding:2px 9px;border-radius:20px;vertical-align:middle;font-family:'Space Grotesk',sans-serif">v3</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v4</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">↻ Live Rates Update</button>
@@ -100,227 +81,259 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ====== STATE + STORAGE (browser localStorage — hosted version) ====== */
-let state = { stocks: [], mfs: [], loans: [] };
-let activeTab = 'stocks';
-const KEY = 'portfolio-bahikhata-v1';
-function loadState(){
-  try{ const raw=localStorage.getItem(KEY); if(raw) state=JSON.parse(raw); }catch(e){}
-  state.stocks=state.stocks||[]; state.mfs=state.mfs||[]; state.loans=state.loans||[];
-}
-function saveState(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast('Save nahi ho paya'); } }
+let state={stocks:[],mfs:[],loans:[]};
+let activeTab='stocks';
+let editStock=null, editMf=null, editLoan=null;
+let loanMode='simple';
+const KEY='portfolio-bahikhata-v1';
+function loadState(){try{const raw=localStorage.getItem(KEY);if(raw)state=JSON.parse(raw);}catch(e){}state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];}
+function saveState(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast('Save nahi ho paya');}}
 
-/* ====== HELPERS ====== */
-const inr = n => '₹' + (isFinite(n)? Math.round(n).toLocaleString('en-IN') : '0');
-const inr2 = n => '₹' + (isFinite(n)? n.toLocaleString('en-IN',{maximumFractionDigits:2}) : '0');
-const uid = () => Math.random().toString(36).slice(2,9);
-const plClass = n => n>=0 ? 'gain' : 'loss';
-const plSign = n => (n>=0?'+':'');
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+const inr=n=>'₹'+(isFinite(n)?Math.round(n).toLocaleString('en-IN'):'0');
+const inr2=n=>'₹'+(isFinite(n)?n.toLocaleString('en-IN',{maximumFractionDigits:2}):'0');
+const uid=()=>Math.random().toString(36).slice(2,9);
+const plClass=n=>n>=0?'gain':'loss';
+const plSign=n=>(n>=0?'+':'');
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function attr(s){return String(s==null?'':s).replace(/"/g,'&quot;');}
 function yearsBetween(d){if(!d)return 0;return Math.max(0,(new Date()-new Date(d))/(1000*60*60*24*365.25));}
 function daysBetween(d){if(!d)return 0;return Math.max(0,Math.floor((new Date()-new Date(d))/(1000*60*60*24)));}
+function monthsBetween(d){if(!d)return 0;const s=new Date(d),n=new Date();let m=(n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth());if(n.getDate()<s.getDate())m--;return Math.max(0,m);}
 
-/* ====== LOAN INTEREST ====== */
 function loanInterest(l){
-  const P=+l.principal||0, r=(+l.rate||0)/100, t=yearsBetween(l.startDate);
+  const P=+l.principal||0;
+  if(l.mode==='fixed'){
+    const tot=+l.months||0, ma=+l.monthlyAmount||0;
+    const elapsed=Math.min(tot,monthsBetween(l.startDate));
+    return {mode:'fixed',interest:elapsed*ma,totalInterest:tot*ma,total:P+tot*ma,elapsed,months:tot,monthly:ma,remaining:Math.max(0,tot-elapsed),days:daysBetween(l.startDate)};
+  }
+  const r=(+l.rate||0)/100,t=yearsBetween(l.startDate);
   let amt;
-  if(l.type==='simple') amt=P*(1+r*t);
-  else{ const n=l.type==='monthly'?12:l.type==='quarterly'?4:1; amt=P*Math.pow(1+r/n,n*t); }
-  return { interest:amt-P, total:amt, days:daysBetween(l.startDate) };
+  if(l.type==='simple')amt=P*(1+r*t);
+  else{const n=l.type==='monthly'?12:l.type==='quarterly'?4:1;amt=P*Math.pow(1+r/n,n*t);}
+  return {mode:'accrue',interest:amt-P,total:amt,days:daysBetween(l.startDate)};
 }
 
-/* ====== LIVE DATA — apne hi /api se (CORS/SSL free) ====== */
-async function fetchMfNav(code){
-  const r=await fetch(`/api/mf?code=${encodeURIComponent(code)}`);
-  const j=await r.json(); if(isFinite(j.nav)) return j.nav; throw new Error('no nav');
-}
-async function fetchStockPrice(symbol,exch){
-  const r=await fetch(`/api/stock?symbol=${encodeURIComponent(symbol)}&exch=${exch}`);
-  const j=await r.json(); if(isFinite(j.price)) return j.price; throw new Error('no price');
-}
+async function fetchMfNav(code){const r=await fetch('/api/mf?code='+encodeURIComponent(code));const j=await r.json();if(isFinite(j.nav))return j.nav;throw new Error('no nav');}
+async function fetchStockPrice(symbol,exch){const r=await fetch('/api/stock?symbol='+encodeURIComponent(symbol)+'&exch='+exch);const j=await r.json();if(isFinite(j.price))return j.price;throw new Error('no price');}
 
 async function refreshAll(){
-  const btn=document.getElementById('refreshBtn');
-  btn.disabled=true; btn.textContent='↻ Update ho raha hai…';
-  let mfOk=0, stkOk=0, stkFail=0;
-  for(const m of state.mfs){ if(m.schemeCode){ try{ m.currentNav=await fetchMfNav(m.schemeCode); mfOk++; }catch(e){} } }
-  for(const s of state.stocks){ try{ s.currentPrice=await fetchStockPrice(s.symbol,s.exch); s.auto=true; stkOk++; }catch(e){ s.auto=false; stkFail++; } }
-  saveState(); render();
-  btn.disabled=false; btn.textContent='↻ Live Rates Update';
-  let msg=`MF update: ${mfOk}/${state.mfs.filter(m=>m.schemeCode).length}`;
-  if(state.stocks.length) msg+=` · Stocks: ${stkOk}/${state.stocks.length}`+(stkFail?` (${stkFail} manual)`:'');
+  const btn=document.getElementById('refreshBtn');btn.disabled=true;btn.textContent='↻ Update ho raha hai…';
+  let mfOk=0,stkOk=0,stkFail=0;
+  for(const m of state.mfs){if(m.schemeCode){try{m.currentNav=await fetchMfNav(m.schemeCode);mfOk++;}catch(e){}}}
+  for(const s of state.stocks){try{s.currentPrice=await fetchStockPrice(s.symbol,s.exch);s.auto=true;stkOk++;}catch(e){s.auto=false;stkFail++;}}
+  saveState();render();btn.disabled=false;btn.textContent='↻ Live Rates Update';
+  let msg='MF: '+mfOk+'/'+state.mfs.filter(m=>m.schemeCode).length;
+  if(state.stocks.length)msg+=' · Stocks: '+stkOk+'/'+state.stocks.length+(stkFail?' ('+stkFail+' manual)':'');
   toast(msg);
 }
 
-/* ====== TOTALS ====== */
 function totals(){
   let sInv=0,sCur=0,mInv=0,mCur=0,lPrin=0,lInt=0;
   state.stocks.forEach(s=>{sInv+=s.qty*s.buyPrice;sCur+=s.qty*(s.currentPrice||s.buyPrice);});
   state.mfs.forEach(m=>{mInv+=m.units*m.buyNav;mCur+=m.units*(m.currentNav||m.buyNav);});
   state.loans.forEach(l=>{const c=loanInterest(l);lPrin+=(+l.principal||0);lInt+=c.interest;});
-  const invested=sInv+mInv+lPrin, current=sCur+mCur+lPrin+lInt;
+  const invested=sInv+mInv+lPrin,current=sCur+mCur+lPrin+lInt;
   return {sInv,sCur,mInv,mCur,lPrin,lInt,invested,current,net:current-invested,stockPL:sCur-sInv,mfPL:mCur-mInv};
 }
 
-/* ====== RENDER ====== */
 function render(){
-  const t=totals(), netPct=t.invested?(t.net/t.invested*100):0;
-  document.getElementById('app').innerHTML=`
-    <div class="pl-strip">
-      <div><div class="net-lbl">Total Net Profit / Loss</div>
-        <div class="net ${plClass(t.net)}">${plSign(t.net)}${inr(t.net)} <span style="font-size:16px">(${plSign(netPct)}${netPct.toFixed(2)}%)</span></div></div>
-      <div class="breakdown">
-        <div>Invested<b class="num">${inr(t.invested)}</b></div>
-        <div>Current Value<b class="num">${inr(t.current)}</b></div></div>
-    </div>
-    <div class="summary">
-      <div class="card"><div class="lbl">Stocks</div><div class="big num">${inr(t.sCur)}</div><div class="sm num ${plClass(t.stockPL)}">${plSign(t.stockPL)}${inr(t.stockPL)}</div></div>
-      <div class="card"><div class="lbl">Mutual Funds</div><div class="big num">${inr(t.mCur)}</div><div class="sm num ${plClass(t.mfPL)}">${plSign(t.mfPL)}${inr(t.mfPL)}</div></div>
-      <div class="card"><div class="lbl">Loan Principal</div><div class="big num">${inr(t.lPrin)}</div><div class="sm" style="color:var(--muted)">diya hua</div></div>
-      <div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">${inr(t.lInt)}</div><div class="sm" style="color:var(--muted)">aaj tak</div></div>
-    </div>
-    <div class="tabs">${tabBtn('stocks','Stocks')}${tabBtn('mfs','Mutual Funds')}${tabBtn('loans','Loans / Interest')}</div>
-    <div class="panel ${activeTab==='stocks'?'active':''}">${renderStocks()}</div>
-    <div class="panel ${activeTab==='mfs'?'active':''}">${renderMfs()}</div>
-    <div class="panel ${activeTab==='loans'?'active':''}">${renderLoans()}</div>`;
+  const t=totals(),netPct=t.invested?(t.net/t.invested*100):0;
+  document.getElementById('app').innerHTML=
+    '<div class="pl-strip"><div><div class="net-lbl">Total Net Profit / Loss</div>'
+    +'<div class="net '+plClass(t.net)+'">'+plSign(t.net)+inr(t.net)+' <span style="font-size:16px">('+plSign(netPct)+netPct.toFixed(2)+'%)</span></div></div>'
+    +'<div class="breakdown"><div>Invested<b class="num">'+inr(t.invested)+'</b></div><div>Current Value<b class="num">'+inr(t.current)+'</b></div></div></div>'
+    +'<div class="summary">'
+    +'<div class="card"><div class="lbl">Stocks</div><div class="big num">'+inr(t.sCur)+'</div><div class="sm num '+plClass(t.stockPL)+'">'+plSign(t.stockPL)+inr(t.stockPL)+'</div></div>'
+    +'<div class="card"><div class="lbl">Mutual Funds</div><div class="big num">'+inr(t.mCur)+'</div><div class="sm num '+plClass(t.mfPL)+'">'+plSign(t.mfPL)+inr(t.mfPL)+'</div></div>'
+    +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
+    +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
+    +'<div class="tabs">'+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('loans','Loans / Interest')+'</div>'
+    +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
+    +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
+    +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>';
 }
-function tabBtn(id,label){return `<button class="tab ${activeTab===id?'active':''}" onclick="activeTab='${id}';render()">${label}</button>`;}
+function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
+function switchTab(id){activeTab=id;editStock=editMf=editLoan=null;render();}
 
+/* ---------- STOCKS ---------- */
 function renderStocks(){
   const rows=state.stocks.map(s=>{
     const inv=s.qty*s.buyPrice,cur=s.qty*(s.currentPrice||s.buyPrice),pl=cur-inv,pct=inv?(pl/inv*100):0;
-    return `<tr>
-      <td><span class="name">${escapeHtml(s.symbol)}</span><span class="tag">${s.exch} · ${s.qty} qty · ${s.auto?'auto':'manual'}</span></td>
-      <td class="num">${inr2(s.buyPrice)}</td>
-      <td class="num"><input class="price-in num" type="number" step="0.01" value="${s.currentPrice||s.buyPrice}" onchange="setStockPrice('${s.id}',this.value)"></td>
-      <td class="num">${inr(inv)}</td><td class="num">${inr(cur)}</td>
-      <td class="num ${plClass(pl)}">${plSign(pl)}${inr(pl)}<br><span style="font-size:11px">${plSign(pct)}${pct.toFixed(1)}%</span></td>
-      <td><button class="del" onclick="delItem('stocks','${s.id}')">✕</button></td></tr>`;
+    return '<tr><td><span class="name">'+escapeHtml(s.symbol)+'</span><span class="tag">'+s.exch+' · '+s.qty+' qty · '+(s.auto?'live':'manual')+'</span></td>'
+      +'<td class="num">'+inr2(s.buyPrice)+'</td>'
+      +'<td class="num"><input class="price-in num" type="number" step="0.01" value="'+(s.currentPrice||s.buyPrice)+'" onchange="setStockPrice(\''+s.id+'\',this.value)"></td>'
+      +'<td class="num">'+inr(inv)+'</td><td class="num">'+inr(cur)+'</td>'
+      +'<td class="num '+plClass(pl)+'">'+plSign(pl)+inr(pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
+      +'<td><button class="edit" onclick="startEditStock(\''+s.id+'\')">✎</button><button class="del" onclick="delItem(\'stocks\',\''+s.id+'\')">✕</button></td></tr>';
   }).join('');
-  return `<table class="tbl"><thead><tr><th>Stock</th><th>Buy Price</th><th>Current</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>
-    <tbody>${rows||`<tr><td colspan="7" class="empty">Abhi koi stock nahi. Neeche add karein.</td></tr>`}</tbody></table>
-    <div class="add-box"><h3>+ Naya Stock Add karein</h3>
-      <div class="row">
-        <div class="fld"><label>Symbol</label><input id="stk-sym" placeholder="RELIANCE" style="width:130px"></div>
-        <div class="fld"><label>Exchange</label><select id="stk-exch"><option>NSE</option><option>BSE</option></select></div>
-        <div class="fld"><label>Quantity</label><input id="stk-qty" type="number" placeholder="10" style="width:90px"></div>
-        <div class="fld"><label>Buy Price (₹)</label><input id="stk-bp" type="number" step="0.01" placeholder="1200" style="width:110px"></div>
-        <div class="fld"><label>Buy Date</label><input id="stk-dt" type="date"></div>
-        <button class="add-btn" onclick="addStock()">Add</button></div>
-      <div class="note">Symbol NSE/BSE ka (RELIANCE, TCS, INFY). "Live Rates Update" dabate hi aaj ka price aa jayega.</div></div>`;
+  const e=editStock?state.stocks.find(x=>x.id===editStock):null;
+  return '<table class="tbl"><thead><tr><th>Stock</th><th>Buy Price</th><th>Current</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="7" class="empty">Abhi koi stock nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Stock Edit karein':'+ Naya Stock Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+    +(e?'':'<div class="row"><div class="fld srch-wrap"><label>Naam se search (live)</label><input id="stk-search" placeholder="jaise: Reliance, TCS" style="width:340px" oninput="stockSearch(this.value)" autocomplete="off"><div id="stk-results"></div></div></div>'
+    +'<div class="note" style="margin:6px 0 0">Search se chunein, ya niche Symbol khud daalein.</div>')
+    +'<div class="row" style="margin-top:12px">'
+    +'<div class="fld"><label>Symbol</label><input id="stk-sym" placeholder="RELIANCE" value="'+(e?attr(e.symbol):'')+'" style="width:130px"></div>'
+    +'<div class="fld"><label>Exchange</label><select id="stk-exch"><option'+(e&&e.exch==='NSE'?' selected':'')+'>NSE</option><option'+(e&&e.exch==='BSE'?' selected':'')+'>BSE</option></select></div>'
+    +'<div class="fld"><label>Quantity</label><input id="stk-qty" type="number" value="'+(e?e.qty:'')+'" placeholder="10" style="width:90px"></div>'
+    +'<div class="fld"><label>Buy Price (₹)</label><input id="stk-bp" type="number" step="0.01" value="'+(e?e.buyPrice:'')+'" placeholder="1200" style="width:110px"></div>'
+    +'<div class="fld"><label>Buy Date</label><input id="stk-dt" type="date" value="'+(e?attr(e.buyDate):'')+'"></div>'
+    +'<button class="add-btn" onclick="saveStock()">'+(e?'Save':'Add')+'</button></div>'
+    +'<div class="note">"Live Rates Update" dabate hi aaj ka price aa jayega.</div></div>';
 }
-
-function renderMfs(){
-  const rows=state.mfs.map(m=>{
-    const inv=m.units*m.buyNav,cur=m.units*(m.currentNav||m.buyNav),pl=cur-inv,pct=inv?(pl/inv*100):0;
-    return `<tr>
-      <td><span class="name">${escapeHtml(m.name)}</span><span class="tag">${m.units} units${m.schemeCode?' · code '+m.schemeCode:' · manual'}</span></td>
-      <td class="num">${inr2(m.buyNav)}</td>
-      <td class="num"><input class="price-in num" type="number" step="0.01" value="${m.currentNav||m.buyNav}" onchange="setMfNav('${m.id}',this.value)"></td>
-      <td class="num">${inr(inv)}</td><td class="num">${inr(cur)}</td>
-      <td class="num ${plClass(pl)}">${plSign(pl)}${inr(pl)}<br><span style="font-size:11px">${plSign(pct)}${pct.toFixed(1)}%</span></td>
-      <td><button class="del" onclick="delItem('mfs','${m.id}')">✕</button></td></tr>`;
-  }).join('');
-  return `<table class="tbl"><thead><tr><th>Fund</th><th>Buy NAV</th><th>Current NAV</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>
-    <tbody>${rows||`<tr><td colspan="7" class="empty">Abhi koi mutual fund nahi. Neeche add karein.</td></tr>`}</tbody></table>
-    <div class="add-box"><h3>+ Naya Mutual Fund Add karein</h3>
-      <div class="row">
-        <div class="fld mf-search-wrap"><label>Fund search (live)</label>
-          <input id="mf-search" placeholder="jaise: SBI Bluechip" style="width:340px" oninput="mfSearch(this.value)" autocomplete="off">
-          <div id="mf-results"></div></div></div>
-      <div class="note" style="margin:6px 0 0">Search se chunein to live NAV auto aayega. Ya naam khud type karke NAV manual daal dein.</div>
-      <div class="row" style="margin-top:12px">
-        <div class="fld"><label>Fund ka naam</label><input id="mf-name" placeholder="upar se chunein ya type karein" style="width:340px;color:var(--brass)"></div>
-        <div class="fld"><label>Units</label><input id="mf-units" type="number" step="0.001" placeholder="150.5" style="width:100px"></div>
-        <div class="fld"><label>Buy NAV (₹)</label><input id="mf-nav" type="number" step="0.01" placeholder="45.20" style="width:100px"></div>
-        <div class="fld"><label>Current NAV (₹)</label><input id="mf-curnav" type="number" step="0.01" placeholder="optional" style="width:100px"></div>
-        <div class="fld"><label>Buy Date</label><input id="mf-dt" type="date"></div>
-        <button class="add-btn" onclick="addMf()">Add</button></div></div>`;
+let stockSel=null,stockTimer=null,stockResults=[];
+function stockSearch(q){
+  clearTimeout(stockTimer);q=q.trim();const box=document.getElementById('stk-results');
+  if(q.length<2){box.innerHTML='';return;}
+  box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Dhoond rahe hain…</div></div>';
+  stockTimer=setTimeout(async()=>{
+    let r=[];try{const res=await fetch('/api/stock-search?q='+encodeURIComponent(q));if(res.ok){const j=await res.json();if(Array.isArray(j))r=j;}}catch(e){box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Search abhi nahi chala — Symbol khud daalein</div></div>';return;}
+    stockResults=r.slice(0,30);
+    if(!stockResults.length){box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Nahi mila</div></div>';return;}
+    box.innerHTML='<div class="search-results">'+stockResults.map((x,i)=>'<div data-i="'+i+'">'+escapeHtml(x.name)+' <span style="color:var(--muted)">· '+x.symbol+' ('+x.exch+')</span></div>').join('')+'</div>';
+    box.querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{const x=stockResults[+el.dataset.i];pickStock(x.symbol,x.exch);}));
+  },300);
 }
-
-function renderLoans(){
-  const rows=state.loans.map(l=>{
-    const c=loanInterest(l);
-    const tl=l.type==='simple'?'Simple':(l.type==='monthly'?'Monthly comp.':l.type==='quarterly'?'Quarterly comp.':'Yearly comp.');
-    return `<tr>
-      <td><span class="name">${escapeHtml(l.borrower)}</span><span class="tag">${l.rate}% p.a. · ${tl} · ${c.days} din${l.note?' · '+escapeHtml(l.note):''}</span></td>
-      <td class="num">${inr(l.principal)}</td><td class="num gain">${inr(c.interest)}</td><td class="num">${inr(c.total)}</td>
-      <td><button class="del" onclick="delItem('loans','${l.id}')">✕</button></td></tr>`;
-  }).join('');
-  return `<table class="tbl"><thead><tr><th>Kisko diya</th><th>Principal</th><th>Interest (aaj tak)</th><th>Total Due</th><th></th></tr></thead>
-    <tbody>${rows||`<tr><td colspan="5" class="empty">Abhi koi loan entry nahi. Neeche add karein.</td></tr>`}</tbody></table>
-    <div class="add-box"><h3>+ Naya Loan / Udhaar Add karein</h3>
-      <div class="row">
-        <div class="fld"><label>Kisko diya (naam)</label><input id="ln-name" placeholder="Ramesh ji" style="width:160px"></div>
-        <div class="fld"><label>Rakam (₹)</label><input id="ln-amt" type="number" placeholder="100000" style="width:120px"></div>
-        <div class="fld"><label>Byaaj % (saalana)</label><input id="ln-rate" type="number" step="0.1" placeholder="18" style="width:110px"></div>
-        <div class="fld"><label>Type</label><select id="ln-type">
-          <option value="simple">Simple</option><option value="monthly">Compound — Monthly</option>
-          <option value="quarterly">Compound — Quarterly</option><option value="yearly">Compound — Yearly</option></select></div>
-        <div class="fld"><label>Kab diya</label><input id="ln-dt" type="date"></div>
-        <div class="fld"><label>Note (optional)</label><input id="ln-note" placeholder="cash / cheque" style="width:130px"></div>
-        <button class="add-btn" onclick="addLoan()">Add</button></div>
-      <div class="note">Byaaj aaj ki tareekh tak apne-aap judta rehta hai — internet ki zaroorat nahi.</div></div>`;
-}
-
-/* ====== ACTIONS ====== */
-async function addStock(){
+function pickStock(sym,exch){document.getElementById('stk-sym').value=sym;document.getElementById('stk-exch').value=exch;document.getElementById('stk-results').innerHTML='';document.getElementById('stk-search').value=sym;}
+function startEditStock(id){editStock=id;editMf=editLoan=null;render();}
+async function saveStock(){
   const sym=document.getElementById('stk-sym').value.trim().toUpperCase();
-  const qty=+document.getElementById('stk-qty').value, bp=+document.getElementById('stk-bp').value;
+  const exch=document.getElementById('stk-exch').value;
+  const qty=+document.getElementById('stk-qty').value,bp=+document.getElementById('stk-bp').value;
+  const dt=document.getElementById('stk-dt').value;
   if(!sym||!qty||!bp){toast('Symbol, quantity aur buy price bharein');return;}
-  const s={id:uid(),symbol:sym,exch:document.getElementById('stk-exch').value,qty,buyPrice:bp,
-    buyDate:document.getElementById('stk-dt').value,currentPrice:bp,auto:false};
-  state.stocks.push(s); saveState(); render();
-  try{ s.currentPrice=await fetchStockPrice(s.symbol,s.exch); s.auto=true; saveState(); render(); }catch(e){ toast(`${sym} ka live price abhi nahi aaya — Current me haath se bhar dein`); }
+  if(editStock){const s=state.stocks.find(x=>x.id===editStock);Object.assign(s,{symbol:sym,exch,qty,buyPrice:bp,buyDate:dt});editStock=null;saveState();render();toast('Stock update ho gaya');try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();}catch(e){}return;}
+  const s={id:uid(),symbol:sym,exch,qty,buyPrice:bp,buyDate:dt,currentPrice:bp,auto:false};
+  state.stocks.push(s);saveState();render();
+  try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();toast('Live price: '+inr2(s.currentPrice));}catch(e){toast(sym+' ka live price abhi nahi aaya — Current me haath se daalein');}
 }
 function setStockPrice(id,v){const s=state.stocks.find(x=>x.id===id);if(s){s.currentPrice=+v;s.auto=false;saveState();render();}}
 
-let mfSel=null, mfTimer=null, mfResults=[];
-function mfMsg(t){document.getElementById('mf-results').innerHTML=`<div class="search-results"><div style="cursor:default;color:var(--muted)">${t}</div></div>`;}
+/* ---------- MUTUAL FUNDS ---------- */
+function renderMfs(){
+  const rows=state.mfs.map(m=>{
+    const inv=m.units*m.buyNav,cur=m.units*(m.currentNav||m.buyNav),pl=cur-inv,pct=inv?(pl/inv*100):0;
+    return '<tr><td><span class="name">'+escapeHtml(m.name)+'</span><span class="tag">'+m.units+' units'+(m.schemeCode?' · code '+m.schemeCode:' · manual')+'</span></td>'
+      +'<td class="num">'+inr2(m.buyNav)+'</td>'
+      +'<td class="num"><input class="price-in num" type="number" step="0.01" value="'+(m.currentNav||m.buyNav)+'" onchange="setMfNav(\''+m.id+'\',this.value)"></td>'
+      +'<td class="num">'+inr(inv)+'</td><td class="num">'+inr(cur)+'</td>'
+      +'<td class="num '+plClass(pl)+'">'+plSign(pl)+inr(pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
+      +'<td><button class="edit" onclick="startEditMf(\''+m.id+'\')">✎</button><button class="del" onclick="delItem(\'mfs\',\''+m.id+'\')">✕</button></td></tr>';
+  }).join('');
+  const e=editMf?state.mfs.find(x=>x.id===editMf):null;
+  return '<table class="tbl"><thead><tr><th>Fund</th><th>Buy NAV</th><th>Current NAV</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="7" class="empty">Abhi koi mutual fund nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Fund Edit karein':'+ Naya Mutual Fund Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+    +(e?'':'<div class="row"><div class="fld srch-wrap"><label>Fund search (live)</label><input id="mf-search" placeholder="jaise: HDFC Flexi Cap Direct Growth" style="width:360px" oninput="mfSearch(this.value)" autocomplete="off"><div id="mf-results"></div></div></div>'
+    +'<div class="note" style="margin:6px 0 0">Search se chunein to live NAV auto aayega. Ya naam khud type karke NAV manual daalein.</div>')
+    +'<div class="row" style="margin-top:12px">'
+    +'<div class="fld"><label>Fund ka naam</label><input id="mf-name" value="'+(e?attr(e.name):'')+'" placeholder="upar se chunein ya type karein" style="width:340px;color:var(--brass)"></div>'
+    +'<div class="fld"><label>Units</label><input id="mf-units" type="number" step="0.001" value="'+(e?e.units:'')+'" placeholder="150.5" style="width:100px"></div>'
+    +'<div class="fld"><label>Buy NAV (₹)</label><input id="mf-nav" type="number" step="0.01" value="'+(e?e.buyNav:'')+'" placeholder="45.20" style="width:100px"></div>'
+    +'<div class="fld"><label>Current NAV (₹)</label><input id="mf-curnav" type="number" step="0.01" value="'+(e&&e.currentNav?e.currentNav:'')+'" placeholder="optional" style="width:100px"></div>'
+    +'<div class="fld"><label>Buy Date</label><input id="mf-dt" type="date" value="'+(e?attr(e.buyDate):'')+'"></div>'
+    +'<button class="add-btn" onclick="saveMf()">'+(e?'Save':'Add')+'</button></div></div>';
+}
+let mfSel=null,mfTimer=null,mfResults=[];
+function mfMsg(t){document.getElementById('mf-results').innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">'+t+'</div></div>';}
 function mfSearch(q){
-  clearTimeout(mfTimer); q=q.trim();
-  const box=document.getElementById('mf-results');
+  clearTimeout(mfTimer);q=q.trim();const box=document.getElementById('mf-results');
   if(q.length<3){box.innerHTML='';return;}
   mfMsg('Dhoond rahe hain…');
   mfTimer=setTimeout(async()=>{
-    let results=[];
-    try{ const r=await fetch(`/api/mf-search?q=${encodeURIComponent(q)}`); if(r.ok){const j=await r.json(); if(Array.isArray(j)) results=j;} }
-    catch(e){ mfMsg('Search abhi nahi chala — neeche naam khud type karke NAV daal dein'); return; }
-    mfResults=results.slice(0,40);
-    if(!mfResults.length){ mfMsg('Koi fund nahi mila — doosre shabd try karein'); return; }
-    box.innerHTML=`<div class="search-results">`+mfResults.map((r,i)=>`<div data-idx="${i}">${escapeHtml(r.schemeName)}</div>`).join('')+`</div>`;
-    box.querySelectorAll('[data-idx]').forEach(el=>el.addEventListener('click',()=>{const r=mfResults[+el.dataset.idx];pickMf(r.schemeCode,r.schemeName);}));
+    let r=[];try{const res=await fetch('/api/mf-search?q='+encodeURIComponent(q));if(res.ok){const j=await res.json();if(Array.isArray(j))r=j;}}catch(e){mfMsg('Search abhi nahi chala — naam khud type karke NAV daalein');return;}
+    mfResults=r.slice(0,40);
+    if(!mfResults.length){mfMsg('Koi fund nahi mila — doosre shabd try karein');return;}
+    box.innerHTML='<div class="search-results">'+mfResults.map((x,i)=>'<div data-i="'+i+'">'+escapeHtml(x.schemeName)+'</div>').join('')+'</div>';
+    box.querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{const x=mfResults[+el.dataset.i];pickMf(x.schemeCode,x.schemeName);}));
   },300);
 }
 function pickMf(code,name){mfSel={code,name};document.getElementById('mf-name').value=name;document.getElementById('mf-results').innerHTML='';document.getElementById('mf-search').value=name;}
-async function addMf(){
-  const typedName=document.getElementById('mf-name').value.trim();
-  const name=typedName||(mfSel&&mfSel.name);
-  const code=(mfSel&&mfSel.name===name)?mfSel.code:null;
-  const units=+document.getElementById('mf-units').value, nav=+document.getElementById('mf-nav').value, curnav=+document.getElementById('mf-curnav').value;
+function startEditMf(id){editMf=id;editStock=editLoan=null;render();}
+async function saveMf(){
+  const name=document.getElementById('mf-name').value.trim();
+  const units=+document.getElementById('mf-units').value,nav=+document.getElementById('mf-nav').value,curnav=+document.getElementById('mf-curnav').value;
   if(!name){toast('Fund ka naam chunein ya type karein');return;}
   if(!units||!nav){toast('Units aur buy NAV bharein');return;}
-  const m={id:uid(),schemeCode:code,name,units,buyNav:nav,buyDate:document.getElementById('mf-dt').value,currentNav:curnav||null};
-  state.mfs.push(m); saveState(); render();
-  if(code){
-    try{ m.currentNav=await fetchMfNav(code); saveState(); render(); toast('Live NAV mil gaya: '+inr2(m.currentNav)); }
-    catch(e){ if(!curnav) toast('Live NAV abhi nahi aaya — "Live Rates Update" dabayein ya NAV khud daalein'); }
-  }
+  const dt=document.getElementById('mf-dt').value;
+  if(editMf){const m=state.mfs.find(x=>x.id===editMf);const code=(mfSel&&mfSel.name===name)?mfSel.code:m.schemeCode;Object.assign(m,{name,units,buyNav:nav,buyDate:dt,schemeCode:code});if(curnav)m.currentNav=curnav;editMf=null;saveState();render();toast('Fund update ho gaya');if(code&&!curnav){try{m.currentNav=await fetchMfNav(code);saveState();render();}catch(e){}}mfSel=null;return;}
+  const code=(mfSel&&mfSel.name===name)?mfSel.code:null;
+  const m={id:uid(),schemeCode:code,name,units,buyNav:nav,buyDate:dt,currentNav:curnav||null};
+  state.mfs.push(m);saveState();render();
+  if(code){try{m.currentNav=await fetchMfNav(code);saveState();render();toast('Live NAV: '+inr2(m.currentNav));}catch(e){if(!curnav)toast('Live NAV abhi nahi aaya — "Live Rates Update" dabayein');}}
   mfSel=null;
 }
 function setMfNav(id,v){const m=state.mfs.find(x=>x.id===id);if(m){m.currentNav=+v;saveState();render();}}
-function addLoan(){
-  const name=document.getElementById('ln-name').value.trim();
-  const amt=+document.getElementById('ln-amt').value, rate=+document.getElementById('ln-rate').value, dt=document.getElementById('ln-dt').value;
-  if(!name||!amt||!rate||!dt){toast('Naam, rakam, byaaj aur date bharein');return;}
-  state.loans.push({id:uid(),borrower:name,principal:amt,rate,type:document.getElementById('ln-type').value,startDate:dt,note:document.getElementById('ln-note').value.trim()});
-  saveState(); render();
+
+/* ---------- LOANS ---------- */
+function renderLoans(){
+  const rows=state.loans.map(l=>{
+    const c=loanInterest(l);
+    if(c.mode==='fixed'){
+      return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+inr(c.monthly)+'/mahina × '+c.months+' · '+c.elapsed+'/'+c.months+' mahine mila · principal wapas '+inr(l.principal)+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
+        +'<td class="num">'+inr(l.principal)+'</td><td class="num gain">'+inr(c.interest)+'</td><td class="num">'+inr(l.principal+c.totalInterest)+'</td>'
+        +'<td><button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
+    }
+    const tl=l.type==='simple'?'Simple':(l.type==='monthly'?'Monthly comp.':l.type==='quarterly'?'Quarterly comp.':'Yearly comp.');
+    return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+l.rate+'% p.a. · '+tl+' · '+c.days+' din'+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
+      +'<td class="num">'+inr(l.principal)+'</td><td class="num gain">'+inr(c.interest)+'</td><td class="num">'+inr(c.total)+'</td>'
+      +'<td><button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
+  }).join('');
+  const e=editLoan?state.loans.find(x=>x.id===editLoan):null;
+  const isFixed=loanMode==='fixed',isComp=loanMode==='compound';
+  let fields='';
+  if(isFixed){
+    fields='<div class="fld"><label>Har mahine milta hai (₹)</label><input id="ln-monthly" type="number" value="'+(e&&e.mode==="fixed"?e.monthlyAmount:'')+'" placeholder="2250" style="width:130px"></div>'
+      +'<div class="fld"><label>Kitne mahine</label><input id="ln-months" type="number" value="'+(e&&e.mode==="fixed"?e.months:'')+'" placeholder="12" style="width:110px"></div>';
+  }else{
+    fields='<div class="fld"><label>Byaaj % (saalana)</label><input id="ln-rate" type="number" step="0.1" value="'+(e&&e.mode!=="fixed"?e.rate:'')+'" placeholder="18" style="width:110px"></div>';
+    if(isComp)fields+='<div class="fld"><label>Compound kab</label><select id="ln-freq"><option value="monthly"'+(e&&e.type==='monthly'?' selected':'')+'>Monthly</option><option value="quarterly"'+(e&&e.type==='quarterly'?' selected':'')+'>Quarterly</option><option value="yearly"'+(e&&e.type==='yearly'?' selected':'')+'>Yearly</option></select></div>';
+  }
+  return '<table class="tbl"><thead><tr><th>Kisko diya</th><th>Principal</th><th>Interest (aaj tak)</th><th>Total milega</th><th></th></tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="5" class="empty">Abhi koi loan entry nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Loan Edit karein':'+ Naya Loan / Udhaar Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+    +'<div class="row">'
+    +'<div class="fld"><label>Tarika</label><select id="ln-mode" onchange="loanMode=this.value;render()">'
+    +'<option value="simple"'+(loanMode==='simple'?' selected':'')+'>Byaaj — Simple</option>'
+    +'<option value="compound"'+(loanMode==='compound'?' selected':'')+'>Byaaj — Compound</option>'
+    +'<option value="fixed"'+(loanMode==='fixed'?' selected':'')+'>Fixed monthly (fix rakam/mahina)</option></select></div>'
+    +'<div class="fld"><label>Kisko diya (naam)</label><input id="ln-name" value="'+(e?attr(e.borrower):'')+'" placeholder="Ramesh ji" style="width:150px"></div>'
+    +'<div class="fld"><label>Rakam / Principal (₹)</label><input id="ln-amt" type="number" value="'+(e?e.principal:'')+'" placeholder="30000" style="width:120px"></div>'
+    +fields
+    +'<div class="fld"><label>Kab diya</label><input id="ln-dt" type="date" value="'+(e?attr(e.startDate):'')+'"></div>'
+    +'<div class="fld"><label>Note (optional)</label><input id="ln-note" value="'+(e?attr(e.note):'')+'" placeholder="cash / cheque" style="width:120px"></div>'
+    +'<button class="add-btn" onclick="saveLoan()">'+(e?'Save':'Add')+'</button></div>'
+    +'<div class="note">'+(isFixed?'Jaise: ₹30,000 diya, har mahine ₹2,250 milta hai 12 mahine tak, phir principal wapas.':'Byaaj aaj ki tareekh tak apne-aap judta rehta hai.')+'</div></div>';
 }
+function startEditLoan(id){editLoan=id;editStock=editMf=null;const l=state.loans.find(x=>x.id===id);loanMode=l.mode==='fixed'?'fixed':(l.type==='simple'?'simple':'compound');render();}
+function saveLoan(){
+  const name=document.getElementById('ln-name').value.trim();
+  const amt=+document.getElementById('ln-amt').value;
+  const dt=document.getElementById('ln-dt').value;
+  const note=document.getElementById('ln-note').value.trim();
+  if(!name||!amt||!dt){toast('Naam, rakam aur date bharein');return;}
+  let obj;
+  if(loanMode==='fixed'){
+    const ma=+document.getElementById('ln-monthly').value,mo=+document.getElementById('ln-months').value;
+    if(!ma||!mo){toast('Monthly rakam aur kitne mahine bharein');return;}
+    obj={borrower:name,principal:amt,startDate:dt,note,mode:'fixed',monthlyAmount:ma,months:mo};
+  }else{
+    const rate=+document.getElementById('ln-rate').value;
+    if(!rate){toast('Byaaj % bharein');return;}
+    const type=loanMode==='compound'?document.getElementById('ln-freq').value:'simple';
+    obj={borrower:name,principal:amt,startDate:dt,note,mode:'accrue',rate,type};
+  }
+  if(editLoan){const l=state.loans.find(x=>x.id===editLoan);['rate','type','monthlyAmount','months'].forEach(k=>delete l[k]);Object.assign(l,obj);editLoan=null;}
+  else{obj.id=uid();state.loans.push(obj);}
+  loanMode='simple';saveState();render();toast('Loan save ho gaya');
+}
+
+function cancelEdit(){editStock=editMf=editLoan=null;loanMode='simple';render();}
 function delItem(kind,id){state[kind]=state[kind].filter(x=>x.id!==id);saveState();render();}
 
-/* ====== INIT ====== */
-loadState(); render();
+loadState();render();
 </script>
 </body>
 </html>
