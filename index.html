@@ -75,7 +75,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v14</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v16</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -103,6 +103,8 @@ let myId=null,myEmail='',myIsAdmin=false,viewingUserId=null,viewingEmail='',admi
 let appSettings={},supportMsgs=[],supportConvos=[],supportOpenUser=null,supportChannel=null;
 let mySuper=false,canSupport=false,canAccounts=false,canSettings=false,adminPermUser=null;
 let news=[];
+let leaderboard=[],myLb={name:'',opted_in:false};
+let myName='',myPhone='';
 let saveTimer=null;
 const KEY='portfolio-bahikhata-v1';
 function normalize(){state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
@@ -180,6 +182,7 @@ async function refreshAll(){
   for(const m of state.mfs){if(m.schemeCode){try{m.currentNav=await fetchMfNav(m.schemeCode);mfOk++;}catch(e){}}}
   for(const s of state.stocks){try{s.currentPrice=await fetchStockPrice(s.symbol,s.exch);s.auto=true;stkOk++;}catch(e){s.auto=false;stkFail++;}}
   saveState();render();btn.disabled=false;btn.textContent='↻ Live Rates Update';
+  checkAlerts();if(myLb.opted_in)updateMyLeaderboard();
   let msg='MF: '+mfOk+'/'+state.mfs.filter(m=>m.schemeCode).length;
   if(state.stocks.length)msg+=' · Stocks: '+stkOk+'/'+state.stocks.length+(stkFail?' ('+stkFail+' manual)':'');
   toast(msg);
@@ -211,13 +214,15 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
+    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
     +'<div class="panel '+(activeTab==='bonds'?'active':'')+'">'+renderBonds()+'</div>'
     +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>'
     +'<div class="panel '+(activeTab==='news'?'active':'')+'">'+renderNews()+'</div>'
+    +'<div class="panel '+(activeTab==='rank'?'active':'')+'">'+renderLeaderboard()+'</div>'
+    +'<div class="panel '+(activeTab==='alerts'?'active':'')+'">'+renderAlerts()+'</div>'
     +'<div class="panel '+(activeTab==='support'?'active':'')+'">'+renderSupport()+'</div>'
     +(canAccounts?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'')
     +(canSettings?'<div class="panel '+(activeTab==='settings'?'active':'')+'">'+renderSettings()+'</div>':'');
@@ -226,6 +231,7 @@ function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':
 function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;adminPermUser=null;
   if(id==='admin'){loadAdminUsers();}
   else if(id==='news'){loadNews();}
+  else if(id==='rank'){loadLeaderboard();}
   else if(id==='support'){if(canSupport){supportOpenUser=null;loadSupportConvos();}else{loadUserChat();}}
   else{render();}
 }
@@ -300,7 +306,7 @@ async function saveStock(){
   state.stocks.push(s);saveState();render();
   try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();toast('Live price: '+inr2(s.currentPrice));}catch(e){toast(sym+' ka live price abhi nahi aaya — Current me haath se daalein');}
 }
-function setStockPrice(id,v){const s=state.stocks.find(x=>x.id===id);if(s){s.currentPrice=+v;s.auto=false;saveState();render();}}
+function setStockPrice(id,v){const s=state.stocks.find(x=>x.id===id);if(s){s.currentPrice=+v;s.auto=false;saveState();render();checkAlerts();}}
 
 /* ---------- MUTUAL FUNDS ---------- */
 function renderMfs(){
@@ -356,7 +362,7 @@ async function saveMf(){
   if(code){try{m.currentNav=await fetchMfNav(code);saveState();render();toast('Live NAV: '+inr2(m.currentNav));}catch(e){if(!curnav)toast('Live NAV abhi nahi aaya — "Live Rates Update" dabayein');}}
   mfSel=null;
 }
-function setMfNav(id,v){const m=state.mfs.find(x=>x.id===id);if(m){m.currentNav=+v;saveState();render();}}
+function setMfNav(id,v){const m=state.mfs.find(x=>x.id===id);if(m){m.currentNav=+v;saveState();render();checkAlerts();}}
 
 /* ---------- LOANS ---------- */
 function renderLoans(){
@@ -571,7 +577,7 @@ async function autoTick(){
   if(!marketOpen())return;
   if(document.activeElement&&['INPUT','SELECT'].indexOf(document.activeElement.tagName)>-1)return;
   for(const s of state.stocks){try{s.currentPrice=await fetchStockPrice(s.symbol,s.exch);s.auto=true;}catch(e){}}
-  saveState();render();
+  saveState();render();checkAlerts();
 }
 setInterval(autoTick,60000);
 
@@ -741,6 +747,65 @@ async function deleteNews(id){
   await loadNews();
 }
 
+/* ---------- LEADERBOARD (opt-in, sirf %) ---------- */
+async function updateMyLeaderboard(){
+  if(!sb||!myId)return;
+  var t=totals();var pct=t.invested?(t.net/t.invested*100):0;
+  var name=(myName&&myName.trim())||(myEmail?myEmail.split('@')[0]:'User');
+  try{await sb.from('leaderboard').upsert({user_id:myId,name:name,pct:pct,opted_in:!!myLb.opted_in,updated_at:new Date().toISOString()});}catch(e){}
+}
+async function loadLeaderboard(){
+  try{var r=await sb.from('leaderboard').select('*').eq('opted_in',true).order('pct',{ascending:false}).limit(100);leaderboard=r.data||[];}catch(e){leaderboard=[];}
+  render();
+}
+function renderLeaderboard(){
+  var t=totals();var mypct=t.invested?(t.net/t.invested*100):0;
+  var settings='<div class="add-box"><h3>Leaderboard</h3>'
+    +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" '+(myLb.opted_in?'checked':'')+' onchange="setLbOptIn(this.checked)" style="width:16px;height:16px"> Mujhe leaderboard par dikhao (sirf % return + naam — rupaye kabhi nahi)</label>'
+    +'<div class="note">Aapka abhi ka return: <b class="'+plClass(mypct)+'">'+(mypct>=0?'+':'')+mypct.toFixed(1)+'%</b>.</div></div>';
+  var rows=leaderboard.length?leaderboard.map(function(u,i){var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    return '<tr><td>'+medal+'</td><td><span class="name">'+escapeHtml(u.name||'Anonymous')+'</span>'+(u.user_id===myId?' <span class="tag" style="color:var(--brass);display:inline">aap</span>':'')+'</td><td class="num '+plClass(u.pct)+'">'+(u.pct>=0?'+':'')+Number(u.pct).toFixed(1)+'%</td></tr>';}).join(''):'<tr><td colspan="3" class="empty">Abhi koi opt-in nahi — sabse pehle aap ban jao!</td></tr>';
+  return settings+'<div class="add-box"><h3>🏆 Top returns</h3><table class="tbl"><thead><tr><th>#</th><th>Naam</th><th>Return</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+async function setLbOptIn(v){myLb.opted_in=v;await updateMyLeaderboard();await loadLeaderboard();toast(v?'Leaderboard par aa gaye 🏆':'Leaderboard se hat gaye');}
+
+/* ---------- PRICE ALERTS (in-app) ---------- */
+function alertCur(a){var arr=state[a.k]||[];var it=arr.find(function(x){return x.id===a.hid;});if(!it)return null;return a.k==='stocks'?(it.currentPrice||it.buyPrice):(it.currentNav||it.buyNav);}
+function renderAlerts(){
+  var opts='';
+  state.stocks.forEach(function(s){opts+='<option value="stocks:'+s.id+'">'+escapeHtml(s.symbol)+' (stock)</option>';});
+  state.mfs.forEach(function(m){opts+='<option value="mfs:'+m.id+'">'+escapeHtml(m.name)+' (MF)</option>';});
+  var add='<div class="add-box"><h3>Naya price alert</h3><div class="row">'
+    +'<div class="fld"><label>Holding</label><select id="al-h">'+(opts||'<option value="">-- pehle stock/MF add karo --</option>')+'</select></div>'
+    +'<div class="fld"><label>Jab price</label><select id="al-dir"><option value="above">upar jaaye (≥)</option><option value="below">neeche aaye (≤)</option></select></div>'
+    +'<div class="fld"><label>Target (₹)</label><input id="al-tgt" type="number" step="0.01" style="width:110px"></div>'
+    +'<button class="add-btn" onclick="addAlert()">Add</button></div>'
+    +'<div class="note">Alert tab check hota hai jab price update ho (auto market-hours me, ya "Live Rates Update" par). Abhi in-app; push/email baad me.</div></div>';
+  var list=(state.alerts||[]).map(function(a){var cur=alertCur(a);
+    return '<tr><td><span class="name">'+escapeHtml(a.label)+'</span><span class="tag">'+(a.dir==='above'?'≥':'≤')+' '+inr2(a.target)+(a.triggeredAt?' · ✅ hit '+fmtTime(a.triggeredAt):'')+'</span></td><td class="num">'+(cur!=null?inr2(cur):'—')+'</td><td><button class="del" onclick="delAlert(\''+a.id+'\')">✕</button></td></tr>';}).join('');
+  return add+'<div class="add-box"><h3>Aapke alerts</h3><table class="tbl"><thead><tr><th>Alert</th><th>Abhi</th><th></th></tr></thead><tbody>'+(list||'<tr><td colspan="3" class="empty">Koi alert nahi.</td></tr>')+'</tbody></table></div>';
+}
+function addAlert(){
+  var hv=document.getElementById('al-h').value;if(!hv){toast('Holding chuno');return;}
+  var parts=hv.split(':'),k=parts[0],hid=parts[1];
+  var dir=document.getElementById('al-dir').value,tgt=+document.getElementById('al-tgt').value;
+  if(!tgt){toast('Target price daalo');return;}
+  var it=(state[k]||[]).find(function(x){return x.id===hid;});if(!it)return;
+  var label=k==='stocks'?it.symbol:it.name;
+  state.alerts=state.alerts||[];state.alerts.push({id:uid(),k:k,hid:hid,dir:dir,target:tgt,label:label,triggeredAt:null});
+  saveState();render();toast('Alert set ho gaya');
+}
+function delAlert(id){state.alerts=(state.alerts||[]).filter(function(a){return a.id!==id;});saveState();render();}
+function checkAlerts(){
+  if(!state.alerts||!state.alerts.length)return;
+  var fired=[];
+  state.alerts.forEach(function(a){
+    if(a.triggeredAt)return;var cur=alertCur(a);if(cur==null)return;
+    if((a.dir==='above'&&cur>=a.target)||(a.dir==='below'&&cur<=a.target)){a.triggeredAt=new Date().toISOString();fired.push(a.label+' '+inr2(cur));}
+  });
+  if(fired.length){saveState();toast('🔔 Alert hit: '+fired.join(', '));if(activeTab==='alerts')render();}
+}
+
 function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
 function delItem(kind,id){state[kind]=state[kind].filter(x=>x.id!==id);saveState();render();}
 
@@ -772,17 +837,23 @@ function renderAuth(){
   const ha=document.getElementById('hdrActions');if(ha)ha.style.display='none';
   document.getElementById('app').innerHTML=
     '<div class="add-box" style="max-width:440px;margin:24px auto">'
-    +'<h3>Login / Sign up</h3>'
+    +'<h3>Welcome — Login ya naya account</h3>'
+    +'<div class="fld" style="margin-bottom:10px"><label>Full Name</label><input id="au-name" placeholder="Poora naam" style="width:100%"></div>'
+    +'<div class="fld" style="margin-bottom:10px"><label>Mobile Number</label><input id="au-phone" placeholder="9812345678" style="width:100%"></div>'
     +'<div class="fld" style="margin-bottom:10px"><label>Email</label><input id="au-email" type="email" placeholder="you@email.com" style="width:100%"></div>'
     +'<div class="fld" style="margin-bottom:14px"><label>Password</label><input id="au-pass" type="password" placeholder="6+ akshar" style="width:100%"></div>'
-    +'<div style="display:flex;gap:8px"><button class="add-btn" onclick="doLogin()">Login</button><button class="sec-btn" onclick="doSignup()">Naya account banao</button></div>'
+    +'<div style="display:flex;gap:8px"><button class="add-btn" onclick="doSignup()">Naya account banao</button><button class="sec-btn" onclick="doLogin()">Login</button></div>'
     +'<div class="note" style="margin-top:10px"><span class="cancel-link" onclick="doForgot()">Password bhool gaye?</span> — email par reset link aayega.</div>'
-    +'<div class="note">Naya account banane ke baad login karein. (Email verify Supabase setting par nirbhar hai.)</div></div>';
+    +'<div class="note">Naya account: Name, Mobile, Email, Password bharein. Login: sirf Email + Password.</div></div>';
 }
 async function doSignup(){
-  const email=document.getElementById('au-email').value.trim(),password=document.getElementById('au-pass').value;
+  const name=(document.getElementById('au-name').value||'').trim();
+  const phone=(document.getElementById('au-phone').value||'').trim();
+  const email=(document.getElementById('au-email').value||'').trim();
+  const password=document.getElementById('au-pass').value;
+  if(!name||!phone){toast('Full Name aur Mobile Number bharein');return;}
   if(!email||password.length<6){toast('Email aur 6+ akshar ka password daalein');return;}
-  const {error}=await sb.auth.signUp({email,password});
+  const {error}=await sb.auth.signUp({email:email,password:password,options:{data:{name:name,phone:phone}}});
   if(error){toast(error.message);return;}
   toast('Account ban gaya! Ab Login dabayein.');
 }
@@ -821,11 +892,11 @@ async function loadAdminUsers(){
   render();
   try{
     const [pr,po]=await Promise.all([
-      sb.from('profiles').select('id,email,is_super,can_support,can_accounts,can_settings').order('email'),
+      sb.from('profiles').select('id,email,name,phone,is_super,can_support,can_accounts,can_settings').order('email'),
       sb.from('portfolios').select('user_id,data')
     ]);
     const pmap={};(po.data||[]).forEach(p=>pmap[p.user_id]=p.data||{});
-    adminUsers=(pr.data||[]).map(u=>({id:u.id,email:u.email,is_super:u.is_super,can_support:u.can_support,can_accounts:u.can_accounts,can_settings:u.can_settings,tot:computeTotals(pmap[u.id]||{})}));
+    adminUsers=(pr.data||[]).map(u=>({id:u.id,email:u.email,name:u.name,phone:u.phone,is_super:u.is_super,can_support:u.can_support,can_accounts:u.can_accounts,can_settings:u.can_settings,tot:computeTotals(pmap[u.id]||{})}));
   }catch(e){adminUsers=[];}
   render();
 }
@@ -846,7 +917,7 @@ function renderAdmin(){
   }
   if(!adminUsers.length)return '<div class="empty">Users load ho rahe hain… (ya abhi koi user nahi)</div>';
   var rows=adminUsers.map(function(u){return '<tr>'
-    +'<td><span class="name">'+escapeHtml(u.email||'—')+'</span>'+permBadges(u)+'</td>'
+    +'<td><span class="name">'+escapeHtml(u.name||u.email||'—')+'</span><span class="tag">'+escapeHtml(u.email||'')+(u.phone?' · 📱 '+escapeHtml(u.phone):'')+'</span>'+permBadges(u)+'</td>'
     +'<td class="num">'+inr(u.tot.current)+'</td>'
     +'<td class="num '+plClass(u.tot.net)+'">'+plSign(u.tot.net)+inr(u.tot.net)+'</td>'
     +'<td><button class="edit" onclick="openUser(\''+u.id+'\',\''+escapeHtml(u.email||'')+'\')">Open</button>'
@@ -870,8 +941,9 @@ function backToMine(){viewingUserId=myId;viewingEmail=myEmail;loadPortfolio(myId
 async function afterLogin(session){
   myId=session.user.id;myEmail=session.user.email;
   const ha=document.getElementById('hdrActions');if(ha)ha.style.display='flex';
-  try{const r=await sb.from('profiles').select('is_super,can_support,can_accounts,can_settings').eq('id',myId).maybeSingle();
+  try{const r=await sb.from('profiles').select('is_super,can_support,can_accounts,can_settings,name,phone').eq('id',myId).maybeSingle();
     const d=r.data||{};mySuper=!!d.is_super;canSupport=mySuper||!!d.can_support;canAccounts=mySuper||!!d.can_accounts;canSettings=mySuper||!!d.can_settings;
+    myName=d.name||'';myPhone=d.phone||'';
     myIsAdmin=mySuper||canSupport||canAccounts||canSettings;
   }catch(e){mySuper=canSupport=canAccounts=canSettings=myIsAdmin=false;}
   try{const st=await sb.from('app_settings').select('*').eq('id',1).maybeSingle();appSettings=st.data||{};}catch(e){appSettings={};}
@@ -880,6 +952,9 @@ async function afterLogin(session){
   await loadPortfolio(myId);
   maybeSnapshot();
   computeStreak();
+  try{const lr=await sb.from('leaderboard').select('name,opted_in').eq('user_id',myId).maybeSingle();myLb=lr.data||{name:'',opted_in:false};}catch(e){myLb={name:'',opted_in:false};}
+  if(myLb.opted_in)updateMyLeaderboard();
+  checkAlerts();
   const ac=document.getElementById('autoChk');if(ac)ac.checked=autoOn;
   activeTab='graph';render();
 }
