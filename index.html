@@ -75,7 +75,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v12</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v13</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -101,6 +101,7 @@ let editStock=null, editMf=null, editLoan=null, editBond=null;
 let loanMode='simple', bondMode='fixed';
 let myId=null,myEmail='',myIsAdmin=false,viewingUserId=null,viewingEmail='',adminUsers=[];
 let appSettings={},supportMsgs=[],supportConvos=[],supportOpenUser=null,supportChannel=null;
+let mySuper=false,canSupport=false,canAccounts=false,canSettings=false,adminPermUser=null;
 let saveTimer=null;
 const KEY='portfolio-bahikhata-v1';
 function normalize(){state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
@@ -199,6 +200,7 @@ function render(){
   const t=totals(),netPct=t.invested?(t.net/t.invested*100):0;
   document.getElementById('app').innerHTML=
     acctBar()
+    +(appSettings.announcement?'<div style="background:var(--surface2);border:1px solid var(--brass-dim);border-left:3px solid var(--brass);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px">📢 '+escapeHtml(appSettings.announcement)+'</div>':'')
     +'<div class="pl-strip"><div><div class="net-lbl">Total Net Profit / Loss</div>'
     +'<div class="net '+plClass(t.net)+'">'+plSign(t.net)+inr(t.net)+' <span style="font-size:16px">('+plSign(netPct)+netPct.toFixed(2)+'%)</span></div></div>'
     +'<div class="breakdown"><div>Invested<b class="num">'+inr(t.invested)+'</b></div><div>Current Value<b class="num">'+inr(t.current)+'</b></div></div></div>'
@@ -208,19 +210,20 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('support','💬 Support')+(myIsAdmin?tabBtn('admin','👥 Accounts'):'')+'</div>'
+    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
     +'<div class="panel '+(activeTab==='bonds'?'active':'')+'">'+renderBonds()+'</div>'
     +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>'
     +'<div class="panel '+(activeTab==='support'?'active':'')+'">'+renderSupport()+'</div>'
-    +(myIsAdmin?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'');
+    +(canAccounts?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'')
+    +(canSettings?'<div class="panel '+(activeTab==='settings'?'active':'')+'">'+renderSettings()+'</div>':'');
 }
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
-function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;
+function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;adminPermUser=null;
   if(id==='admin'){loadAdminUsers();}
-  else if(id==='support'){if(myIsAdmin){supportOpenUser=null;loadSupportConvos();}else{loadUserChat();}}
+  else if(id==='support'){if(canSupport){supportOpenUser=null;loadSupportConvos();}else{loadUserChat();}}
   else{render();}
 }
 function exBtn(kind,it){return '<button class="edit" title="Portfolio total me gino / na gino" onclick="toggleExclude(\''+kind+'\',\''+it.id+'\')" style="'+(it.exclude?'border-color:var(--loss);color:var(--loss)':'border-color:var(--brass-dim);color:var(--brass)')+'">'+(it.exclude?'⊘':'∑')+'</button>';}
@@ -583,7 +586,7 @@ function supportButtons(){
     +(wa?'<a class="sec-btn" style="text-decoration:none" target="_blank" href="https://wa.me/'+wa+'">🟢 WhatsApp</a>':'')
     +(!call&&!wa?'<span class="note">Support number abhi set nahi hai.</span>':'')+'</div>';
 }
-function renderSupport(){ return myIsAdmin?renderAdminSupport():renderUserChat(); }
+function renderSupport(){ return canSupport?renderAdminSupport():renderUserChat(); }
 function renderUserChat(){
   var thread=supportMsgs.map(function(m){return bubble(m,'user');}).join('')||'<div class="empty">Koi baat-cheet nahi. Neeche apna sawaal likhein — hum jaldi reply karenge.</div>';
   return '<div class="add-box"><h3>Support se baat karein</h3>'+supportButtons()
@@ -601,20 +604,37 @@ async function sendUserMsg(){
   await loadUserChat();
 }
 function renderAdminSupport(){
-  var settings='<div class="add-box"><h3>Support number (yahan se edit karein)</h3><div class="row">'
-    +'<div class="fld"><label>Call number</label><input id="set-phone" value="'+attr(appSettings.support_phone||'')+'" placeholder="+919812345678" style="width:180px"></div>'
-    +'<div class="fld"><label>WhatsApp number</label><input id="set-wa" value="'+attr(appSettings.support_whatsapp||'')+'" placeholder="919812345678" style="width:180px"></div>'
-    +'<button class="add-btn" onclick="saveSupportNumbers()">Save</button></div>'
-    +'<div class="note">Ye number sabhi users ko Call/WhatsApp button me dikhega. WhatsApp me country code ke saath (jaise 91...), bina + ke.</div></div>';
   if(supportOpenUser){
     var c=supportConvos.find(function(x){return x.uid===supportOpenUser;});
     var thread=(c?c.msgs:[]).map(function(m){return bubble(m,'admin');}).join('')||'<div class="empty">—</div>';
-    return settings+'<div class="add-box"><h3>'+escapeHtml(c?c.email:'')+' <span class="cancel-link" onclick="supportOpenUser=null;render()">← list par wapas</span></h3>'
+    return '<div class="add-box"><h3>'+escapeHtml(c?c.email:'')+' <span class="cancel-link" onclick="supportOpenUser=null;render()">← list par wapas</span></h3>'
       +'<div id="chatScroll" style="max-height:360px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px">'+thread+'</div>'
       +'<div class="row"><input id="adm-msg" placeholder="Reply likhein…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\')sendAdminReply()"><button class="add-btn" onclick="sendAdminReply()">Reply</button></div></div>';
   }
   var list=supportConvos.length?supportConvos.map(function(c){return '<tr><td><span class="name">'+escapeHtml(c.email)+'</span><span class="tag">'+escapeHtml((c.last||'').slice(0,70))+'</span></td><td class="num">'+c.count+'</td><td><button class="edit" onclick="openConvo(\''+c.uid+'\')">Open</button></td></tr>';}).join(''):'<tr><td colspan="3" class="empty">Abhi koi support message nahi.</td></tr>';
-  return settings+'<div class="add-box"><h3>Support conversations</h3><table class="tbl"><thead><tr><th>User</th><th>Msgs</th><th></th></tr></thead><tbody>'+list+'</tbody></table></div>';
+  return '<div class="add-box"><h3>Support conversations</h3><table class="tbl"><thead><tr><th>User</th><th>Msgs</th><th></th></tr></thead><tbody>'+list+'</tbody></table></div>';
+}
+function renderSettings(){
+  var s=appSettings;
+  return '<div class="add-box"><h3>Support number</h3><div class="row">'
+    +'<div class="fld"><label>Call number</label><input id="set-phone" value="'+attr(s.support_phone||'')+'" placeholder="+919812345678" style="width:180px"></div>'
+    +'<div class="fld"><label>WhatsApp number</label><input id="set-wa" value="'+attr(s.support_whatsapp||'')+'" placeholder="919812345678" style="width:180px"></div>'
+    +'<button class="add-btn" onclick="saveSupportNumbers()">Save</button></div>'
+    +'<div class="note">Ye number sabhi users ke Call/WhatsApp button me dikhega. WhatsApp me country code ke saath, bina + ke (jaise 9198...).</div></div>'
+    +'<div class="add-box"><h3>Announcement (sabko upar dikhega)</h3>'
+    +'<textarea id="set-ann" style="width:100%;min-height:70px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="Jaise: Kal maintenance rahega 2-3pm.">'+escapeHtml(s.announcement||'')+'</textarea>'
+    +'<div style="margin-top:8px"><button class="add-btn" onclick="saveAnnouncement()">Save</button> <span class="cancel-link" onclick="clearAnnouncement()">Banner hatao</span></div></div>';
+}
+async function saveAnnouncement(){
+  var ann=(document.getElementById('set-ann').value||'').trim();
+  var r=await sb.from('app_settings').upsert({id:1,announcement:ann,updated_at:new Date().toISOString()});
+  if(r.error){toast(r.error.message);return;}
+  appSettings.announcement=ann;render();toast('Announcement save ho gaya');
+}
+async function clearAnnouncement(){
+  var r=await sb.from('app_settings').upsert({id:1,announcement:'',updated_at:new Date().toISOString()});
+  if(r.error){toast(r.error.message);return;}
+  appSettings.announcement='';render();toast('Banner hata diya');
 }
 async function loadSupportConvos(){
   try{
@@ -729,23 +749,48 @@ async function loadAdminUsers(){
   render();
   try{
     const [pr,po]=await Promise.all([
-      sb.from('profiles').select('id,email,is_admin').order('email'),
+      sb.from('profiles').select('id,email,is_super,can_support,can_accounts,can_settings').order('email'),
       sb.from('portfolios').select('user_id,data')
     ]);
     const pmap={};(po.data||[]).forEach(p=>pmap[p.user_id]=p.data||{});
-    adminUsers=(pr.data||[]).map(u=>({id:u.id,email:u.email,is_admin:u.is_admin,tot:computeTotals(pmap[u.id]||{})}));
+    adminUsers=(pr.data||[]).map(u=>({id:u.id,email:u.email,is_super:u.is_super,can_support:u.can_support,can_accounts:u.can_accounts,can_settings:u.can_settings,tot:computeTotals(pmap[u.id]||{})}));
   }catch(e){adminUsers=[];}
   render();
 }
+function permBadges(u){
+  var b=[];if(u.is_super)b.push('super');if(u.can_support)b.push('support');if(u.can_accounts)b.push('accounts');if(u.can_settings)b.push('settings');
+  return b.length?' <span class="tag" style="color:var(--gain);display:inline">'+b.join(', ')+'</span>':'';
+}
 function renderAdmin(){
+  if(adminPermUser){
+    var u=adminUsers.find(function(x){return x.id===adminPermUser;});
+    if(!u)return '<div class="empty">User nahi mila.</div>';
+    return '<div class="add-box"><h3>Access — '+escapeHtml(u.email)+' <span class="cancel-link" onclick="adminPermUser=null;render()">← list par wapas</span></h3>'
+      +permToggle('Support — chat dekhe aur reply kare','can_support',u.can_support,u.id)
+      +permToggle('Accounts — sabke portfolio dekhe/badle','can_accounts',u.can_accounts,u.id)
+      +permToggle('Settings — support number aur announcement badle','can_settings',u.can_settings,u.id)
+      +permToggle('SUPER ADMIN — sab kuch + doosre admins ko access de','is_super',u.is_super,u.id)
+      +'<div class="note">Toggle karte hi turant lagu ho jata hai. User ko dobara login karne par naya access milega.</div></div>';
+  }
   if(!adminUsers.length)return '<div class="empty">Users load ho rahe hain… (ya abhi koi user nahi)</div>';
-  const rows=adminUsers.map(u=>'<tr>'
-    +'<td><span class="name">'+escapeHtml(u.email||'—')+'</span>'+(u.is_admin?' <span class="tag" style="color:var(--gain);display:inline">admin</span>':'')+'</td>'
+  var rows=adminUsers.map(function(u){return '<tr>'
+    +'<td><span class="name">'+escapeHtml(u.email||'—')+'</span>'+permBadges(u)+'</td>'
     +'<td class="num">'+inr(u.tot.current)+'</td>'
     +'<td class="num '+plClass(u.tot.net)+'">'+plSign(u.tot.net)+inr(u.tot.net)+'</td>'
-    +'<td><button class="edit" onclick="openUser(\''+u.id+'\',\''+escapeHtml(u.email||'')+'\')">Open</button></td></tr>').join('');
-  return '<table class="tbl"><thead><tr><th>User</th><th>Net Worth</th><th>Profit/Loss</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
-    +'<div class="note">Kisi user ko "Open" karke uska poora portfolio dekh/badal sakte ho — badalne par usi ke account me save hoga. Upar "← mera account" se wapas.</div>';
+    +'<td><button class="edit" onclick="openUser(\''+u.id+'\',\''+escapeHtml(u.email||'')+'\')">Open</button>'
+    +(mySuper?'<button class="edit" onclick="adminPermUser=\''+u.id+'\';render()">Access</button>':'')+'</td></tr>';}).join('');
+  return '<div class="add-box"><h3>Sabhi users</h3><table class="tbl"><thead><tr><th>User</th><th>Net Worth</th><th>P/L</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="note">"Open" se portfolio dekho/badlo. '+(mySuper?'"Access" se kisi ko admin-access do/hatao.':'')+' Upar "← mera account" se wapas.</div></div>';
+}
+async function setPerm(uid,field,val){
+  var patch={};patch[field]=val;
+  var r=await sb.from('profiles').update(patch).eq('id',uid);
+  if(r.error){toast(r.error.message);return;}
+  var u=adminUsers.find(function(x){return x.id===uid;});if(u)u[field]=val;
+  render();toast('Access update ho gaya');
+}
+function permToggle(label,field,val,uid){
+  return '<label style="display:flex;gap:10px;align-items:center;margin:10px 0;font-size:13px;cursor:pointer"><input type="checkbox" '+(val?'checked':'')+' onchange="setPerm(\''+uid+'\',\''+field+'\',this.checked)" style="width:16px;height:16px"> '+label+'</label>';
 }
 function openUser(uid,email){viewingUserId=uid;viewingEmail=email;loadPortfolio(uid).then(()=>{activeTab='stocks';render();});}
 function backToMine(){viewingUserId=myId;viewingEmail=myEmail;loadPortfolio(myId).then(()=>{activeTab='stocks';render();});}
@@ -753,7 +798,10 @@ function backToMine(){viewingUserId=myId;viewingEmail=myEmail;loadPortfolio(myId
 async function afterLogin(session){
   myId=session.user.id;myEmail=session.user.email;
   const ha=document.getElementById('hdrActions');if(ha)ha.style.display='flex';
-  try{const r=await sb.from('profiles').select('is_admin').eq('id',myId).maybeSingle();myIsAdmin=!!(r.data&&r.data.is_admin);}catch(e){myIsAdmin=false;}
+  try{const r=await sb.from('profiles').select('is_super,can_support,can_accounts,can_settings').eq('id',myId).maybeSingle();
+    const d=r.data||{};mySuper=!!d.is_super;canSupport=mySuper||!!d.can_support;canAccounts=mySuper||!!d.can_accounts;canSettings=mySuper||!!d.can_settings;
+    myIsAdmin=mySuper||canSupport||canAccounts||canSettings;
+  }catch(e){mySuper=canSupport=canAccounts=canSettings=myIsAdmin=false;}
   try{const st=await sb.from('app_settings').select('*').eq('id',1).maybeSingle();appSettings=st.data||{};}catch(e){appSettings={};}
   setupRealtime();
   viewingUserId=myId;viewingEmail=myEmail;
