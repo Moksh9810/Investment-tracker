@@ -1,9 +1,19 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Portfolio Bahi-Khata</title>
+<title>Bahi-Khata — Track Your Investments</title>
+<meta name="description" content="Track your stocks, mutual funds, bonds and loans in one place. Live prices, real returns (XIRR), reports and alerts.">
+<meta property="og:title" content="Bahi-Khata — Track Your Investments">
+<meta property="og:description" content="All your investments in one place. Live prices, real returns, reports and alerts.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Bahi-Khata — Track Your Investments">
+<meta name="twitter:description" content="All your investments in one place. Live prices, real returns, reports and alerts.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bahi-Khata">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -72,6 +82,14 @@
   .loading{color:var(--muted);font-size:13px;padding:20px;text-align:center}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--brass-dim);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:50}
   .toast.show{opacity:1}
+  .modal-ov{position:fixed;inset:0;background:rgba(6,10,18,.66);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;animation:mfade .15s ease}
+  @keyframes mfade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .modal h3{margin-bottom:10px}
+  .modal .modal-body{font-size:14px;line-height:1.6;color:var(--text)}
+  .modal .mfld{margin-top:12px}.modal .mfld label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  .modal input{width:100%}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
   @media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}.tbl{font-size:12px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}body{padding:14px 10px 80px}}
 </style>
 </head>
@@ -79,8 +97,8 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v21</span></h1>
-      <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
+      <h1>Bahi-Khata<span class="dot">.</span></h1>
+      <div class="sub">Stocks · Mutual Funds · Bonds · Loans — all in one place</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
       <label class="sec-btn" style="cursor:pointer"><input type="checkbox" id="autoChk" onchange="toggleAuto(this)" style="margin-right:6px;vertical-align:middle">Auto</label>
@@ -89,7 +107,7 @@
       <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">↻ Live Rates Update</button>
     </div>
   </header>
-  <div id="app"><div class="loading">Data load ho raha hai…</div></div>
+  <div id="app"><div class="loading">Loading…</div></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -183,7 +201,7 @@ async function fetchMfNav(code){const r=await fetch('/api/mf?code='+encodeURICom
 async function fetchStockPrice(symbol,exch){const r=await fetch('/api/stock?symbol='+encodeURIComponent(symbol)+'&exch='+exch);const j=await r.json();if(isFinite(j.price))return j.price;throw new Error('no price');}
 
 async function refreshAll(){
-  const btn=document.getElementById('refreshBtn');btn.disabled=true;btn.textContent='↻ Update ho raha hai…';
+  const btn=document.getElementById('refreshBtn');btn.disabled=true;btn.textContent='↻ Updating…';
   let mfOk=0,stkOk=0,stkFail=0;
   for(const m of state.mfs){if(m.schemeCode){try{m.currentNav=await fetchMfNav(m.schemeCode);mfOk++;}catch(e){}}}
   for(const s of state.stocks){try{s.currentPrice=await fetchStockPrice(s.symbol,s.exch);s.auto=true;stkOk++;}catch(e){s.auto=false;stkFail++;}}
@@ -219,7 +237,7 @@ function render(){
     +'<div class="card"><div class="lbl">Stocks</div><div class="big num">'+inr(t.sCur)+'</div><div class="sm num '+plClass(t.stockPL)+'">'+plSign(t.stockPL)+inr(t.stockPL)+'</div></div>'
     +'<div class="card"><div class="lbl">Mutual Funds</div><div class="big num">'+inr(t.mCur)+'</div><div class="sm num '+plClass(t.mfPL)+'">'+plSign(t.mfPL)+inr(t.mfPL)+'</div></div>'
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
-    +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
+    +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">Lent out</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
     +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('premium','⭐ Premium')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
@@ -255,14 +273,14 @@ function renderStocks(){
       +'<td class="num"><input class="price-in num" type="number" step="0.01" value="'+(s.currentPrice||s.buyPrice)+'" onchange="setStockPrice(\''+s.id+'\',this.value)"></td>'
       +'<td class="num">'+inr(inv)+'</td><td class="num">'+inr(cur)+'</td>'
       +'<td class="num '+plClass(pl)+'">'+plSign(pl)+inr(pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
-      +'<td>'+exBtn('stocks',s)+'<button class="edit" title="Aur units khareede (average)" onclick="addUnits(\''+s.id+'\')">＋</button><button class="edit" title="Stock split adjust" onclick="splitStock(\''+s.id+'\')">⑂</button><button class="edit" onclick="startEditStock(\''+s.id+'\')">✎</button><button class="del" onclick="delItem(\'stocks\',\''+s.id+'\')">✕</button></td></tr>';
+      +'<td>'+exBtn('stocks',s)+'<button class="edit" title="Buy more units (average)" onclick="addUnits(\''+s.id+'\')">＋</button><button class="edit" title="Stock split adjust" onclick="splitStock(\''+s.id+'\')">⑂</button><button class="edit" onclick="startEditStock(\''+s.id+'\')">✎</button><button class="del" onclick="delItem(\'stocks\',\''+s.id+'\')">✕</button></td></tr>';
   }).join('');
   const e=editStock?state.stocks.find(x=>x.id===editStock):null;
   return '<table class="tbl"><thead><tr><th>Stock</th><th>Buy Price</th><th>Current</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>'
-    +'<tbody>'+(rows||'<tr><td colspan="7" class="empty">Abhi koi stock nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
-    +'<div class="add-box"><h3>'+(e?'✎ Stock Edit karein':'+ Naya Stock Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
-    +(e?'':'<div class="row"><div class="fld srch-wrap"><label>Naam se search (live)</label><input id="stk-search" placeholder="jaise: Reliance, TCS" style="width:340px" oninput="stockSearch(this.value)" autocomplete="off"><div id="stk-results"></div></div></div>'
-    +'<div class="note" style="margin:6px 0 0">Search se chunein, ya niche Symbol khud daalein.</div>')
+    +'<tbody>'+(rows||'<tr><td colspan="7" class="empty">No stocks yet. Add one below.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Edit stock':'+ Add new stock')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+    +(e?'':'<div class="row"><div class="fld srch-wrap"><label>Search by name (live)</label><input id="stk-search" placeholder="e.g. Reliance, TCS" style="width:340px" oninput="stockSearch(this.value)" autocomplete="off"><div id="stk-results"></div></div></div>'
+    +'<div class="note" style="margin:6px 0 0">Pick from search, or enter the Symbol manually below.</div>')
     +'<div class="row" style="margin-top:12px">'
     +'<div class="fld"><label>Symbol</label><input id="stk-sym" placeholder="RELIANCE" value="'+(e?attr(e.symbol):'')+'" style="width:130px"></div>'
     +'<div class="fld"><label>Exchange</label><select id="stk-exch"><option'+(e&&e.exch==='NSE'?' selected':'')+'>NSE</option><option'+(e&&e.exch==='BSE'?' selected':'')+'>BSE</option></select></div>'
@@ -270,7 +288,7 @@ function renderStocks(){
     +'<div class="fld"><label>Buy Price (₹)</label><input id="stk-bp" type="number" step="0.01" value="'+(e?e.buyPrice:'')+'" placeholder="1200" style="width:110px"></div>'
     +'<div class="fld"><label>Buy Date</label><input id="stk-dt" type="date" value="'+(e?attr(e.buyDate):'')+'"></div>'
     +'<button class="add-btn" onclick="saveStock()">'+(e?'Save':'Add')+'</button></div>'
-    +'<div class="note">"Live Rates Update" dabate hi aaj ka price aa jayega.</div></div>';
+    +'<div class="note">Tap "Live Rates Update" to fetch today’s price.</div></div>';
 }
 const STOCKS=[
 {n:'Reliance Industries',s:'RELIANCE'},{n:'Tata Consultancy Services (TCS)',s:'TCS'},{n:'HDFC Bank',s:'HDFCBANK'},{n:'ICICI Bank',s:'ICICIBANK'},{n:'Infosys',s:'INFY'},{n:'Hindustan Unilever (HUL)',s:'HINDUNILVR'},{n:'State Bank of India (SBI)',s:'SBIN'},{n:'Bharti Airtel',s:'BHARTIARTL'},{n:'ITC',s:'ITC'},{n:'Kotak Mahindra Bank',s:'KOTAKBANK'},{n:'Larsen & Toubro (L&T)',s:'LT'},{n:'Axis Bank',s:'AXISBANK'},{n:'Bajaj Finance',s:'BAJFINANCE'},{n:'Bajaj Finserv',s:'BAJAJFINSV'},{n:'Asian Paints',s:'ASIANPAINT'},{n:'Maruti Suzuki',s:'MARUTI'},{n:'HCL Technologies',s:'HCLTECH'},{n:'Sun Pharmaceutical',s:'SUNPHARMA'},{n:'Titan Company',s:'TITAN'},{n:'Wipro',s:'WIPRO'},{n:'UltraTech Cement',s:'ULTRACEMCO'},{n:'Nestle India',s:'NESTLEIND'},{n:'Power Grid',s:'POWERGRID'},{n:'NTPC',s:'NTPC'},{n:'Tata Motors',s:'TATAMOTORS'},{n:'Tata Steel',s:'TATASTEEL'},{n:'JSW Steel',s:'JSWSTEEL'},{n:'Mahindra & Mahindra (M&M)',s:'M&M'},{n:'IndusInd Bank',s:'INDUSINDBK'},{n:'Adani Enterprises',s:'ADANIENT'},{n:'Adani Ports',s:'ADANIPORTS'},{n:'Adani Green Energy',s:'ADANIGREEN'},{n:'Adani Power',s:'ADANIPOWER'},{n:'HDFC Life Insurance',s:'HDFCLIFE'},{n:'HDFC AMC',s:'HDFCAMC'},{n:'SBI Life Insurance',s:'SBILIFE'},{n:'Bajaj Auto',s:'BAJAJ-AUTO'},{n:'Hero MotoCorp',s:'HEROMOTOCO'},{n:'Eicher Motors',s:'EICHERMOT'},{n:'Britannia Industries',s:'BRITANNIA'},{n:"Divi's Laboratories",s:'DIVISLAB'},{n:"Dr Reddy's Labs",s:'DRREDDY'},{n:'Cipla',s:'CIPLA'},{n:'Grasim Industries',s:'GRASIM'},{n:'Coal India',s:'COALINDIA'},{n:'ONGC',s:'ONGC'},{n:'Indian Oil (IOC)',s:'IOC'},{n:'BPCL',s:'BPCL'},{n:'GAIL India',s:'GAIL'},{n:'Tech Mahindra',s:'TECHM'},{n:'Shree Cement',s:'SHREECEM'},{n:'Pidilite Industries',s:'PIDILITIND'},{n:'Dabur India',s:'DABUR'},{n:'Godrej Consumer',s:'GODREJCP'},{n:'Avenue Supermarts (DMart)',s:'DMART'},{n:'One97 (Paytm)',s:'PAYTM'},{n:'FSN E-Commerce (Nykaa)',s:'NYKAA'},{n:'Vedanta',s:'VEDL'},{n:'Hindalco Industries',s:'HINDALCO'},{n:'LTIMindtree',s:'LTIM'},{n:'SBI Cards',s:'SBICARD'},{n:'Bank of Baroda',s:'BANKBARODA'},{n:'Punjab National Bank (PNB)',s:'PNB'},{n:'Canara Bank',s:'CANBK'},{n:'InterGlobe (IndiGo)',s:'INDIGO'},{n:'DLF',s:'DLF'},{n:'Ambuja Cements',s:'AMBUJACEM'},{n:'ACC',s:'ACC'},{n:'Havells India',s:'HAVELLS'},{n:'Siemens',s:'SIEMENS'},{n:'ABB India',s:'ABB'},{n:'Bosch',s:'BOSCHLTD'},{n:'Berger Paints',s:'BERGEPAINT'},{n:'Marico',s:'MARICO'},{n:'Colgate-Palmolive',s:'COLPAL'},{n:'Trent',s:'TRENT'},{n:'Bharat Electronics (BEL)',s:'BEL'},{n:'Hindustan Aeronautics (HAL)',s:'HAL'},{n:'Bharat Forge',s:'BHARATFORG'},{n:'Page Industries',s:'PAGEIND'},{n:'Muthoot Finance',s:'MUTHOOTFIN'},{n:'Cholamandalam Finance',s:'CHOLAFIN'},{n:'ICICI Prudential Life',s:'ICICIPRULI'},{n:'ICICI Lombard',s:'ICICIGI'},{n:'Yes Bank',s:'YESBANK'},{n:'IDFC First Bank',s:'IDFCFIRSTB'},{n:'Federal Bank',s:'FEDERALBNK'},{n:'Tata Power',s:'TATAPOWER'},{n:'Tata Consumer Products',s:'TATACONSUM'},{n:'Apollo Hospitals',s:'APOLLOHOSP'},{n:'Max Healthcare',s:'MAXHEALTH'},{n:'Lupin',s:'LUPIN'},{n:'Aurobindo Pharma',s:'AUROPHARMA'},{n:'Torrent Pharma',s:'TORNTPHARM'},{n:'Biocon',s:'BIOCON'},{n:'Samvardhana Motherson',s:'MOTHERSON'},{n:'Jindal Steel & Power',s:'JINDALSTEL'},{n:'SAIL',s:'SAIL'},{n:'NMDC',s:'NMDC'},{n:'Container Corp (CONCOR)',s:'CONCOR'},{n:'Petronet LNG',s:'PETRONET'},{n:'Indian Railway Finance (IRFC)',s:'IRFC'},{n:'IRCTC',s:'IRCTC'},{n:'REC',s:'RECLTD'},{n:'Power Finance (PFC)',s:'PFC'},{n:'LIC',s:'LICI'},{n:'Zydus Lifesciences',s:'ZYDUSLIFE'},{n:'Persistent Systems',s:'PERSISTENT'},{n:'Coforge',s:'COFORGE'},{n:'Mphasis',s:'MPHASIS'},{n:'Polycab India',s:'POLYCAB'},{n:'Astral',s:'ASTRAL'},{n:'Balkrishna Industries',s:'BALKRISIND'}
@@ -282,7 +300,7 @@ function localStockMatch(q){
 }
 function renderStockResults(list){
   const box=document.getElementById('stk-results');if(!box)return;
-  if(!list.length){box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Nahi mila — niche Symbol khud daalein</div></div>';return;}
+  if(!list.length){box.innerHTML='<div class="search-results"><div style="cursor:default;color:var(--muted)">Not found — enter the Symbol manually below</div></div>';return;}
   stockResults=list.slice(0,30);
   box.innerHTML='<div class="search-results">'+stockResults.map((x,i)=>'<div data-i="'+i+'">'+escapeHtml(x.name)+' <span style="color:var(--muted)">· '+x.symbol+' ('+x.exch+')</span></div>').join('')+'</div>';
   box.querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{const x=stockResults[+el.dataset.i];pickStock(x.symbol,x.exch);}));
@@ -309,36 +327,46 @@ async function exportAllUsers(){
     var dump={exported_at:new Date().toISOString(),profiles:pr.data||[],portfolios:po.data||[]};
     var blob=new Blob([JSON.stringify(dump,null,2)],{type:'application/json'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='all-users-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
-    toast('Sabka data download ho gaya');
+    toast('All data downloaded');
   }catch(e){toast('Export fail: '+e.message);}
 }
 function startEditStock(id){editStock=id;editMf=editLoan=null;render();}
 function addUnits(id){
   var s=state.stocks.find(function(x){return x.id===id;});if(!s)return;
-  var q=parseFloat(prompt('Kitne aur units/shares khareede?','')); if(!q||q<=0)return;
-  var p=parseFloat(prompt('Kis price par (per share)?',String(s.currentPrice||s.buyPrice||''))); if(!p||p<=0)return;
-  var oldQty=+s.qty||0, oldCost=oldQty*(+s.buyPrice||0), newCost=q*p;
-  s.qty=oldQty+q; s.buyPrice=(oldCost+newCost)/s.qty;
-  saveState();render();toast('Units add ho gaye — average price update');
+  uiModal({title:'Buy more '+escapeHtml(s.symbol),
+    html:'<div class="mfld"><label>How many more units/shares?</label><input id="au-q" type="number" step="any" placeholder="e.g. 10"></div>'
+      +'<div class="mfld"><label>At what price (per share)?</label><input id="au-p" type="number" step="any" value="'+(s.currentPrice||s.buyPrice||'')+'"></div>',
+    okText:'Add',
+    onOk:function(ov){
+      var q=parseFloat(ov.querySelector('#au-q').value),p=parseFloat(ov.querySelector('#au-p').value);
+      if(!q||q<=0||!p||p<=0){toast('Enter valid units and price');return false;}
+      var oldQty=+s.qty||0,oldCost=oldQty*(+s.buyPrice||0);
+      s.qty=oldQty+q;s.buyPrice=(oldCost+q*p)/s.qty;
+      saveState();render();toast('Units added — average price updated');
+    }});
 }
 function splitStock(id){
   var s=state.stocks.find(function(x){return x.id===id;});if(!s)return;
-  var r=prompt('Split ratio daalein — jaise 2 (1→2), ya 0.5 (reverse). Naye/purane:', '2');
-  var ratio=parseFloat(r); if(!ratio||ratio<=0)return;
-  s.qty=(+s.qty||0)*ratio; s.buyPrice=(+s.buyPrice||0)/ratio;
-  if(s.currentPrice)s.currentPrice=s.currentPrice/ratio;
-  saveState();render();toast('Split adjust ho gaya (P/L wahi rahega)');
+  uiModal({title:'Stock split — '+escapeHtml(s.symbol),
+    html:'Enter the split ratio (new shares per old share). e.g. <b>2</b> for 1→2, or <b>0.5</b> for a reverse split.<div class="mfld"><label>Ratio</label><input id="sp-r" type="number" step="any" value="2"></div>',
+    okText:'Adjust',
+    onOk:function(ov){
+      var ratio=parseFloat(ov.querySelector('#sp-r').value);
+      if(!ratio||ratio<=0){toast('Enter a valid ratio');return false;}
+      s.qty=(+s.qty||0)*ratio;s.buyPrice=(+s.buyPrice||0)/ratio;if(s.currentPrice)s.currentPrice=s.currentPrice/ratio;
+      saveState();render();toast('Split adjusted (P/L stays the same)');
+    }});
 }
 async function saveStock(){
   const sym=document.getElementById('stk-sym').value.trim().toUpperCase();
   const exch=document.getElementById('stk-exch').value;
   const qty=+document.getElementById('stk-qty').value,bp=+document.getElementById('stk-bp').value;
   const dt=document.getElementById('stk-dt').value;
-  if(!sym||!qty||!bp){toast('Symbol, quantity aur buy price bharein');return;}
-  if(editStock){const s=state.stocks.find(x=>x.id===editStock);Object.assign(s,{symbol:sym,exch,qty,buyPrice:bp,buyDate:dt});editStock=null;saveState();render();toast('Stock update ho gaya');try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();}catch(e){}return;}
+  if(!sym||!qty||!bp){toast('Enter Symbol, quantity and buy price');return;}
+  if(editStock){const s=state.stocks.find(x=>x.id===editStock);Object.assign(s,{symbol:sym,exch,qty,buyPrice:bp,buyDate:dt});editStock=null;saveState();render();toast('Stock updated');try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();}catch(e){}return;}
   const s={id:uid(),symbol:sym,exch,qty,buyPrice:bp,buyDate:dt,currentPrice:bp,auto:false};
   state.stocks.push(s);saveState();render();
-  try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();toast('Live price: '+inr2(s.currentPrice));}catch(e){toast(sym+' ka live price abhi nahi aaya — Current me haath se daalein');}
+  try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();toast('Live price: '+inr2(s.currentPrice));}catch(e){toast(sym+' — live price unavailable, enter it manually in Current');}
 }
 function setStockPrice(id,v){const s=state.stocks.find(x=>x.id===id);if(s){s.currentPrice=+v;s.auto=false;saveState();render();checkAlerts();}}
 
@@ -355,12 +383,12 @@ function renderMfs(){
   }).join('');
   const e=editMf?state.mfs.find(x=>x.id===editMf):null;
   return '<table class="tbl"><thead><tr><th>Fund</th><th>Buy NAV</th><th>Current NAV</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>'
-    +'<tbody>'+(rows||'<tr><td colspan="7" class="empty">Abhi koi mutual fund nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
-    +'<div class="add-box"><h3>'+(e?'✎ Fund Edit karein':'+ Naya Mutual Fund Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
-    +(e?'':'<div class="row"><div class="fld srch-wrap"><label>Fund search (live)</label><input id="mf-search" placeholder="jaise: HDFC Flexi Cap Direct Growth" style="width:360px" oninput="mfSearch(this.value)" autocomplete="off"><div id="mf-results"></div></div></div>'
-    +'<div class="note" style="margin:6px 0 0">Search se chunein to live NAV auto aayega. Ya naam khud type karke NAV manual daalein.</div>')
+    +'<tbody>'+(rows||'<tr><td colspan="7" class="empty">No mutual funds yet. Add one below.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Edit fund':'+ Add new mutual fund')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+    +(e?'':'<div class="row"><div class="fld srch-wrap"><label>Fund search (live)</label><input id="mf-search" placeholder="e.g. HDFC Flexi Cap Direct Growth" style="width:360px" oninput="mfSearch(this.value)" autocomplete="off"><div id="mf-results"></div></div></div>'
+    +'<div class="note" style="margin:6px 0 0">Pick from search to auto-fill live NAV. Or type the name and enter NAV manually.</div>')
     +'<div class="row" style="margin-top:12px">'
-    +'<div class="fld"><label>Fund ka naam</label><input id="mf-name" value="'+(e?attr(e.name):'')+'" placeholder="upar se chunein ya type karein" style="width:340px;color:var(--brass)"></div>'
+    +'<div class="fld"><label>Fund name</label><input id="mf-name" value="'+(e?attr(e.name):'')+'" placeholder="pick above or type" style="width:340px;color:var(--brass)"></div>'
     +'<div class="fld"><label>Units</label><input id="mf-units" type="number" step="0.001" value="'+(e?e.units:'')+'" placeholder="150.5" style="width:100px"></div>'
     +'<div class="fld"><label>Buy NAV (₹)</label><input id="mf-nav" type="number" step="0.01" value="'+(e?e.buyNav:'')+'" placeholder="45.20" style="width:100px"></div>'
     +'<div class="fld"><label>Current NAV (₹)</label><input id="mf-curnav" type="number" step="0.01" value="'+(e&&e.currentNav?e.currentNav:'')+'" placeholder="optional" style="width:100px"></div>'
@@ -372,11 +400,11 @@ function mfMsg(t){document.getElementById('mf-results').innerHTML='<div class="s
 function mfSearch(q){
   clearTimeout(mfTimer);q=q.trim();const box=document.getElementById('mf-results');
   if(q.length<3){box.innerHTML='';return;}
-  mfMsg('Dhoond rahe hain…');
+  mfMsg('Searching…');
   mfTimer=setTimeout(async()=>{
-    let r=[];try{const res=await fetch('/api/mf-search?q='+encodeURIComponent(q));if(res.ok){const j=await res.json();if(Array.isArray(j))r=j;}}catch(e){mfMsg('Search abhi nahi chala — naam khud type karke NAV daalein');return;}
+    let r=[];try{const res=await fetch('/api/mf-search?q='+encodeURIComponent(q));if(res.ok){const j=await res.json();if(Array.isArray(j))r=j;}}catch(e){mfMsg('Search unavailable — type the name and enter NAV manually');return;}
     mfResults=r.slice(0,40);
-    if(!mfResults.length){mfMsg('Koi fund nahi mila — doosre shabd try karein');return;}
+    if(!mfResults.length){mfMsg('No funds found — try different words');return;}
     box.innerHTML='<div class="search-results">'+mfResults.map((x,i)=>'<div data-i="'+i+'">'+escapeHtml(x.schemeName)+'</div>').join('')+'</div>';
     box.querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{const x=mfResults[+el.dataset.i];pickMf(x.schemeCode,x.schemeName);}));
   },300);
@@ -386,14 +414,14 @@ function startEditMf(id){editMf=id;editStock=editLoan=null;render();}
 async function saveMf(){
   const name=document.getElementById('mf-name').value.trim();
   const units=+document.getElementById('mf-units').value,nav=+document.getElementById('mf-nav').value,curnav=+document.getElementById('mf-curnav').value;
-  if(!name){toast('Fund ka naam chunein ya type karein');return;}
-  if(!units||!nav){toast('Units aur buy NAV bharein');return;}
+  if(!name){toast('Pick or type the fund name');return;}
+  if(!units||!nav){toast('Enter units and buy NAV');return;}
   const dt=document.getElementById('mf-dt').value;
-  if(editMf){const m=state.mfs.find(x=>x.id===editMf);const code=(mfSel&&mfSel.name===name)?mfSel.code:m.schemeCode;Object.assign(m,{name,units,buyNav:nav,buyDate:dt,schemeCode:code});if(curnav)m.currentNav=curnav;editMf=null;saveState();render();toast('Fund update ho gaya');if(code&&!curnav){try{m.currentNav=await fetchMfNav(code);saveState();render();}catch(e){}}mfSel=null;return;}
+  if(editMf){const m=state.mfs.find(x=>x.id===editMf);const code=(mfSel&&mfSel.name===name)?mfSel.code:m.schemeCode;Object.assign(m,{name,units,buyNav:nav,buyDate:dt,schemeCode:code});if(curnav)m.currentNav=curnav;editMf=null;saveState();render();toast('Fund updated');if(code&&!curnav){try{m.currentNav=await fetchMfNav(code);saveState();render();}catch(e){}}mfSel=null;return;}
   const code=(mfSel&&mfSel.name===name)?mfSel.code:null;
   const m={id:uid(),schemeCode:code,name,units,buyNav:nav,buyDate:dt,currentNav:curnav||null};
   state.mfs.push(m);saveState();render();
-  if(code){try{m.currentNav=await fetchMfNav(code);saveState();render();toast('Live NAV: '+inr2(m.currentNav));}catch(e){if(!curnav)toast('Live NAV abhi nahi aaya — "Live Rates Update" dabayein');}}
+  if(code){try{m.currentNav=await fetchMfNav(code);saveState();render();toast('Live NAV: '+inr2(m.currentNav));}catch(e){if(!curnav)toast('Live NAV unavailable — tap "Live Rates Update"');}}
   mfSel=null;
 }
 function setMfNav(id,v){const m=state.mfs.find(x=>x.id===id);if(m){m.currentNav=+v;saveState();render();checkAlerts();}}
@@ -403,12 +431,12 @@ function renderLoans(){
   const rows=state.loans.map(l=>{
     const c=loanInterest(l);
     if(c.mode==='fixed'){
-      return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+inr(c.monthly)+'/mahina × '+c.months+' · '+c.elapsed+'/'+c.months+' mahine mila · principal wapas '+inr(l.principal)+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
+      return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+inr(c.monthly)+'/month × '+c.months+' · '+c.elapsed+'/'+c.months+' months paid · principal back '+inr(l.principal)+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
         +'<td class="num">'+inr(l.principal)+'</td><td class="num gain">'+inr(c.interest)+'</td><td class="num">'+inr(l.principal+c.totalInterest)+'</td>'
         +'<td>'+exBtn('loans',l)+'<button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
     }
     const tl=l.type==='simple'?'Simple':(l.type==='monthly'?'Monthly comp.':l.type==='quarterly'?'Quarterly comp.':'Yearly comp.');
-    return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+l.rate+'% p.a. · '+tl+' · '+c.days+' din'+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
+    return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+l.rate+'% p.a. · '+tl+' · '+c.days+' days'+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
       +'<td class="num">'+inr(l.principal)+'</td><td class="num gain">'+inr(c.interest)+'</td><td class="num">'+inr(c.total)+'</td>'
       +'<td>'+exBtn('loans',l)+'<button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
   }).join('');
@@ -416,27 +444,27 @@ function renderLoans(){
   const isFixed=loanMode==='fixed',isComp=loanMode==='compound';
   let fields='';
   if(isFixed){
-    fields='<div class="fld"><label>Har mahine milta hai (₹)</label><input id="ln-monthly" type="number" value="'+(e&&e.mode==="fixed"?e.monthlyAmount:'')+'" placeholder="2250" style="width:130px"></div>'
-      +'<div class="fld"><label>Kitne mahine</label><input id="ln-months" type="number" value="'+(e&&e.mode==="fixed"?e.months:'')+'" placeholder="12" style="width:110px"></div>';
+    fields='<div class="fld"><label>Received per month (₹)</label><input id="ln-monthly" type="number" value="'+(e&&e.mode==="fixed"?e.monthlyAmount:'')+'" placeholder="2250" style="width:130px"></div>'
+      +'<div class="fld"><label>How many months</label><input id="ln-months" type="number" value="'+(e&&e.mode==="fixed"?e.months:'')+'" placeholder="12" style="width:110px"></div>';
   }else{
-    fields='<div class="fld"><label>Byaaj % (saalana)</label><input id="ln-rate" type="number" step="0.1" value="'+(e&&e.mode!=="fixed"?e.rate:'')+'" placeholder="18" style="width:110px"></div>';
-    if(isComp)fields+='<div class="fld"><label>Compound kab</label><select id="ln-freq"><option value="monthly"'+(e&&e.type==='monthly'?' selected':'')+'>Monthly</option><option value="quarterly"'+(e&&e.type==='quarterly'?' selected':'')+'>Quarterly</option><option value="yearly"'+(e&&e.type==='yearly'?' selected':'')+'>Yearly</option></select></div>';
+    fields='<div class="fld"><label>Interest % (annual)</label><input id="ln-rate" type="number" step="0.1" value="'+(e&&e.mode!=="fixed"?e.rate:'')+'" placeholder="18" style="width:110px"></div>';
+    if(isComp)fields+='<div class="fld"><label>Compound frequency</label><select id="ln-freq"><option value="monthly"'+(e&&e.type==='monthly'?' selected':'')+'>Monthly</option><option value="quarterly"'+(e&&e.type==='quarterly'?' selected':'')+'>Quarterly</option><option value="yearly"'+(e&&e.type==='yearly'?' selected':'')+'>Yearly</option></select></div>';
   }
-  return '<table class="tbl"><thead><tr><th>Kisko diya</th><th>Principal</th><th>Interest (aaj tak)</th><th>Total milega</th><th></th></tr></thead>'
-    +'<tbody>'+(rows||'<tr><td colspan="5" class="empty">Abhi koi loan entry nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
-    +'<div class="add-box"><h3>'+(e?'✎ Loan Edit karein':'+ Naya Loan / Udhaar Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+  return '<table class="tbl"><thead><tr><th>Lent to</th><th>Principal</th><th>Interest (to date)</th><th>Total due</th><th></th></tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="5" class="empty">No loans yet. Add one below.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Edit loan':'+ Add new loan')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
     +'<div class="row">'
     +'<div class="fld"><label>Tarika</label><select id="ln-mode" onchange="loanMode=this.value;render()">'
-    +'<option value="simple"'+(loanMode==='simple'?' selected':'')+'>Byaaj — Simple</option>'
-    +'<option value="compound"'+(loanMode==='compound'?' selected':'')+'>Byaaj — Compound</option>'
-    +'<option value="fixed"'+(loanMode==='fixed'?' selected':'')+'>Fixed monthly (fix rakam/mahina)</option></select></div>'
-    +'<div class="fld"><label>Kisko diya (naam)</label><input id="ln-name" value="'+(e?attr(e.borrower):'')+'" placeholder="Ramesh ji" style="width:150px"></div>'
-    +'<div class="fld"><label>Rakam / Principal (₹)</label><input id="ln-amt" type="number" value="'+(e?e.principal:'')+'" placeholder="30000" style="width:120px"></div>'
+    +'<option value="simple"'+(loanMode==='simple'?' selected':'')+'>Interest — Simple</option>'
+    +'<option value="compound"'+(loanMode==='compound'?' selected':'')+'>Interest — Compound</option>'
+    +'<option value="fixed"'+(loanMode==='fixed'?' selected':'')+'>Fixed monthly (fixed amount/month)</option></select></div>'
+    +'<div class="fld"><label>Lent to (name)</label><input id="ln-name" value="'+(e?attr(e.borrower):'')+'" placeholder="Ramesh ji" style="width:150px"></div>'
+    +'<div class="fld"><label>Amount / Principal (₹)</label><input id="ln-amt" type="number" value="'+(e?e.principal:'')+'" placeholder="30000" style="width:120px"></div>'
     +fields
-    +'<div class="fld"><label>Kab diya</label><input id="ln-dt" type="date" value="'+(e?attr(e.startDate):'')+'"></div>'
+    +'<div class="fld"><label>Date given</label><input id="ln-dt" type="date" value="'+(e?attr(e.startDate):'')+'"></div>'
     +'<div class="fld"><label>Note (optional)</label><input id="ln-note" value="'+(e?attr(e.note):'')+'" placeholder="cash / cheque" style="width:120px"></div>'
     +'<button class="add-btn" onclick="saveLoan()">'+(e?'Save':'Add')+'</button></div>'
-    +'<div class="note">'+(isFixed?'Jaise: ₹30,000 diya, har mahine ₹2,250 milta hai 12 mahine tak, phir principal wapas.':'Byaaj aaj ki tareekh tak apne-aap judta rehta hai.')+'</div></div>';
+    +'<div class="note">'+(isFixed?'e.g. ₹30,000 lent, ₹2,250 received each month for 12 months, then principal back.':'Interest accrues automatically up to today.')+'</div></div>';
 }
 function startEditLoan(id){editLoan=id;editStock=editMf=null;const l=state.loans.find(x=>x.id===id);loanMode=l.mode==='fixed'?'fixed':(l.type==='simple'?'simple':'compound');render();}
 function saveLoan(){
@@ -444,21 +472,21 @@ function saveLoan(){
   const amt=+document.getElementById('ln-amt').value;
   const dt=document.getElementById('ln-dt').value;
   const note=document.getElementById('ln-note').value.trim();
-  if(!name||!amt||!dt){toast('Naam, rakam aur date bharein');return;}
+  if(!name||!amt||!dt){toast('Enter name, amount and date');return;}
   let obj;
   if(loanMode==='fixed'){
     const ma=+document.getElementById('ln-monthly').value,mo=+document.getElementById('ln-months').value;
-    if(!ma||!mo){toast('Monthly rakam aur kitne mahine bharein');return;}
+    if(!ma||!mo){toast('Enter monthly amount and number of months');return;}
     obj={borrower:name,principal:amt,startDate:dt,note,mode:'fixed',monthlyAmount:ma,months:mo};
   }else{
     const rate=+document.getElementById('ln-rate').value;
-    if(!rate){toast('Byaaj % bharein');return;}
+    if(!rate){toast('Enter interest %');return;}
     const type=loanMode==='compound'?document.getElementById('ln-freq').value:'simple';
     obj={borrower:name,principal:amt,startDate:dt,note,mode:'accrue',rate,type};
   }
   if(editLoan){const l=state.loans.find(x=>x.id===editLoan);['rate','type','monthlyAmount','months'].forEach(k=>delete l[k]);Object.assign(l,obj);editLoan=null;}
   else{obj.id=uid();state.loans.push(obj);}
-  loanMode='simple';saveState();render();toast('Loan save ho gaya');
+  loanMode='simple';saveState();render();toast('Loan saved');
 }
 
 /* ---------- BONDS ---------- */
@@ -475,8 +503,8 @@ function renderBonds(){
     }
     if(c.btype==='fixedpay'){
       const totCol=c.totalInterest!=null?inr(b.amount+c.totalInterest):'—';
-      const term=c.months?(c.elapsed+'/'+c.months+' mahine'):(c.elapsed+' mahine');
-      return '<tr><td><span class="name">'+escapeHtml(b.name)+'</span><span class="tag">'+inr(c.monthly)+'/mahina · '+term+' mila · principal wapas '+inr(b.amount)+(b.note?' · '+escapeHtml(b.note):'')+'</span></td>'
+      const term=c.months?(c.elapsed+'/'+c.months+' months'):(c.elapsed+' months');
+      return '<tr><td><span class="name">'+escapeHtml(b.name)+'</span><span class="tag">'+inr(c.monthly)+'/month · '+term+' received · principal back '+inr(b.amount)+(b.note?' · '+escapeHtml(b.note):'')+'</span></td>'
         +'<td class="num">'+inr(c.invested)+'</td><td class="num gain">'+inr(c.interestToDate)+'</td><td class="num">'+totCol+'</td>'
         +'<td>'+exBtn('bonds',b)+'<button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
     }
@@ -491,35 +519,35 @@ function renderBonds(){
   const isTrade=bondMode==='trade', isPay=bondMode==='fixedpay';
   const head=isTrade
     ?'<thead><tr><th>Bond</th><th>Invested</th><th>Current Value</th><th>P/L</th><th></th></tr></thead>'
-    :'<thead><tr><th>Bond</th><th>Invested</th><th>Interest (aaj tak)</th><th>Maturity pe total</th><th></th></tr></thead>';
+    :'<thead><tr><th>Bond</th><th>Invested</th><th>Interest (to date)</th><th>Maturity pe total</th><th></th></tr></thead>';
   let fields='';
   if(isTrade){
     fields='<div class="fld"><label>Invested (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype==='trade'?e.amount:'')+'" placeholder="100000" style="width:120px"></div>'
-      +'<div class="fld"><label>Current Value (₹)</label><input id="bd-cur" type="number" value="'+(e&&e.btype==='trade'&&e.currentValue!=null?e.currentValue:'')+'" placeholder="abhi ka" style="width:120px"></div>';
+      +'<div class="fld"><label>Current Value (₹)</label><input id="bd-cur" type="number" value="'+(e&&e.btype==='trade'&&e.currentValue!=null?e.currentValue:'')+'" placeholder="current" style="width:120px"></div>';
   }else if(isPay){
     fields='<div class="fld"><label>Invested / Principal (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype==='fixedpay'?e.amount:'')+'" placeholder="40000" style="width:130px"></div>'
-      +'<div class="fld"><label>Har mahine milta hai (₹)</label><input id="bd-monthly" type="number" value="'+(e&&e.btype==='fixedpay'?e.monthlyAmount:'')+'" placeholder="350" style="width:130px"></div>'
-      +'<div class="fld"><label>Kitne mahine (0=chalu)</label><input id="bd-months" type="number" value="'+(e&&e.btype==='fixedpay'&&e.months?e.months:'')+'" placeholder="0 = jab tak chale" style="width:150px"></div>';
+      +'<div class="fld"><label>Received per month (₹)</label><input id="bd-monthly" type="number" value="'+(e&&e.btype==='fixedpay'?e.monthlyAmount:'')+'" placeholder="350" style="width:130px"></div>'
+      +'<div class="fld"><label>How many months (0=ongoing)</label><input id="bd-months" type="number" value="'+(e&&e.btype==='fixedpay'&&e.months?e.months:'')+'" placeholder="0 = jab tak chale" style="width:150px"></div>';
   }else{
     fields='<div class="fld"><label>Invested / Face (₹)</label><input id="bd-amt" type="number" value="'+(e&&e.btype==='fixed'?e.amount:'')+'" placeholder="100000" style="width:130px"></div>'
-      +'<div class="fld"><label>Byaaj % (saalana)</label><input id="bd-rate" type="number" step="0.01" value="'+(e&&e.btype==='fixed'?e.rate:'')+'" placeholder="8.5" style="width:110px"></div>'
-      +'<div class="fld"><label>Byaaj kab</label><select id="bd-freq">'
+      +'<div class="fld"><label>Interest % (annual)</label><input id="bd-rate" type="number" step="0.01" value="'+(e&&e.btype==='fixed'?e.rate:'')+'" placeholder="8.5" style="width:110px"></div>'
+      +'<div class="fld"><label>Interest frequency</label><select id="bd-freq">'
       +['monthly:Monthly','quarterly:Quarterly','halfyearly:Half-yearly','yearly:Yearly','cumulative:Cumulative (ant me)'].map(o=>{const[v,l]=o.split(':');return '<option value="'+v+'"'+(e&&e.freq===v?' selected':'')+'>'+l+'</option>';}).join('')+'</select></div>'
       +'<div class="fld"><label>Maturity Date</label><input id="bd-mat" type="date" value="'+(e&&e.maturityDate?attr(e.maturityDate):'')+'"></div>';
   }
-  return '<table class="tbl">'+head+'<tbody>'+(rows||'<tr><td colspan="5" class="empty">Abhi koi bond nahi. Neeche add karein.</td></tr>')+'</tbody></table>'
-    +'<div class="add-box"><h3>'+(e?'✎ Bond Edit karein':'+ Naya Bond Add karein')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
+  return '<table class="tbl">'+head+'<tbody>'+(rows||'<tr><td colspan="5" class="empty">No bonds yet. Add one below.</td></tr>')+'</tbody></table>'
+    +'<div class="add-box"><h3>'+(e?'✎ Edit bond':'+ Add new bond')+(e?'<span class="cancel-link" onclick="cancelEdit()">cancel</span>':'')+'</h3>'
     +'<div class="row">'
     +'<div class="fld"><label>Tarika</label><select id="bd-mode" onchange="bondMode=this.value;render()">'
-    +'<option value="fixed"'+(bondMode==='fixed'?' selected':'')+'>Fix byaaj % + maturity</option>'
-    +'<option value="fixedpay"'+(bondMode==='fixedpay'?' selected':'')+'>Fixed monthly payout (fix rakam/mahina)</option>'
+    +'<option value="fixed"'+(bondMode==='fixed'?' selected':'')+'>Fixed coupon % + maturity</option>'
+    +'<option value="fixedpay"'+(bondMode==='fixedpay'?' selected':'')+'>Fixed monthly payout (fixed amount/month)</option>'
     +'<option value="trade"'+(bondMode==='trade'?' selected':'')+'>Tradeable (market price)</option></select></div>'
-    +'<div class="fld"><label>Bond ka naam</label><input id="bd-name" value="'+(e?attr(e.name):'')+'" placeholder="jaise: NHAI 8.5% 2032" style="width:220px"></div>'
+    +'<div class="fld"><label>Bond name</label><input id="bd-name" value="'+(e?attr(e.name):'')+'" placeholder="e.g. NHAI 8.5% 2032" style="width:220px"></div>'
     +fields
     +'<div class="fld"><label>Kharida (date)</label><input id="bd-dt" type="date" value="'+(e?attr(e.buyDate):'')+'"></div>'
     +'<div class="fld"><label>Note (optional)</label><input id="bd-note" value="'+(e?attr(e.note):'')+'" placeholder="demat / issuer" style="width:120px"></div>'
     +'<button class="add-btn" onclick="saveBond()">'+(e?'Save':'Add')+'</button></div>'
-    +'<div class="note">'+(isTrade?'Market bond: Current Value haath se update karo — P/L apne-aap.':isPay?'Jaise: ₹40,000 dala, har mahine ₹350 aata hai, ant me principal wapas. "Kitne mahine" me 0 daalo agar tenure fix nahi hai.':'Byaaj aaj ki tareekh tak apne-aap judta hai; Maturity Date se "kul kitna milega" bhi dikhega.')+'</div></div>';
+    +'<div class="note">'+(isTrade?'Market bond: update Current Value manually — P/L is automatic.':isPay?'e.g. ₹40,000 invested, ₹350 received each month, principal back at the end. Enter 0 in "How many months" if the tenure is open-ended.':'Interest accrues automatically up to today; the Maturity Date also shows the total you’ll receive.')+'</div></div>';
 }
 function startEditBond(id){editBond=id;editStock=editMf=editLoan=null;const b=state.bonds.find(x=>x.id===id);bondMode=b.btype||'fixed';render();}
 function saveBond(){
@@ -527,23 +555,23 @@ function saveBond(){
   const amt=+document.getElementById('bd-amt').value;
   const dt=document.getElementById('bd-dt').value;
   const note=document.getElementById('bd-note').value.trim();
-  if(!name||!amt){toast('Bond ka naam aur rakam bharein');return;}
+  if(!name||!amt){toast('Enter bond name and amount');return;}
   let obj;
   if(bondMode==='trade'){
     const cur=document.getElementById('bd-cur').value;
     obj={name,amount:amt,buyDate:dt,note,btype:'trade',currentValue:(cur===''?null:+cur)};
   }else if(bondMode==='fixedpay'){
     const ma=+document.getElementById('bd-monthly').value;
-    if(!ma){toast('Har mahine kitna milta hai, wo bharein');return;}
+    if(!ma){toast('Enter how much you receive each month');return;}
     obj={name,amount:amt,buyDate:dt,note,btype:'fixedpay',monthlyAmount:ma,months:+document.getElementById('bd-months').value||0};
   }else{
     const rate=+document.getElementById('bd-rate').value;
-    if(!rate){toast('Byaaj % bharein');return;}
+    if(!rate){toast('Enter interest %');return;}
     obj={name,amount:amt,buyDate:dt,note,btype:'fixed',rate,freq:document.getElementById('bd-freq').value,maturityDate:document.getElementById('bd-mat').value};
   }
   if(editBond){const b=state.bonds.find(x=>x.id===editBond);['rate','freq','maturityDate','currentValue','monthlyAmount','months'].forEach(k=>delete b[k]);Object.assign(b,obj);editBond=null;}
   else{obj.id=uid();state.bonds.push(obj);}
-  bondMode='fixed';saveState();render();toast('Bond save ho gaya');
+  bondMode='fixed';saveState();render();toast('Bond saved');
 }
 function setBondValue(id,v){const b=state.bonds.find(x=>x.id===id);if(b){b.currentValue=(v===''?null:+v);saveState();render();}}
 
@@ -556,14 +584,14 @@ function arcPath(cx,cy,r,r2,a0,a1){
 }
 function svgDonut(segs){
   const total=segs.reduce((a,s)=>a+s.value,0);
-  if(total<=0)return '<div class="empty">Abhi koi value nahi — pehle holdings add karein.</div>';
+  if(total<=0)return '<div class="empty">Nothing to show yet — add some holdings first.</div>';
   let ang=0,paths='';
   segs.forEach(s=>{const sweep=s.value/total*360;paths+='<path d="'+arcPath(90,90,80,48,ang,ang+sweep-0.5)+'" fill="'+s.color+'"/>';ang+=sweep;});
   const legend=segs.map(s=>'<div style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0"><span style="width:12px;height:12px;border-radius:3px;background:'+s.color+';display:inline-block"></span>'+s.label+' — <b class="num">'+inr(s.value)+'</b> <span style="color:var(--muted)">('+(s.value/total*100).toFixed(1)+'%)</span></div>').join('');
   return '<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap"><svg width="180" height="180" viewBox="0 0 180 180">'+paths+'<text x="90" y="86" text-anchor="middle" fill="var(--muted)" font-size="11">Total</text><text x="90" y="104" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="700">'+inr(total)+'</text></svg><div>'+legend+'</div></div>';
 }
 function svgLine(hist){
-  if(!hist||hist.length<2)return '<div class="note">Trend kal se banna shuru hoga — har din app kholne par ek point apne-aap add hota jayega.</div>';
+  if(!hist||hist.length<2)return '<div class="note">The trend starts from tomorrow — a point is added automatically each day you open the app.</div>';
   const w=580,h=190,pad=34;
   const vals=hist.map(p=>p.net);let min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);
   if(min>0)min=0;if(max<0)max=0;if(min===max)max=min+1;
@@ -576,7 +604,7 @@ function svgLine(hist){
     +'<polyline points="'+line+'" fill="none" stroke="'+(last.net>=0?'var(--gain)':'var(--loss)')+'" stroke-width="2.5"/>'
     +'<circle cx="'+xs(hist.length-1)+'" cy="'+ys(last.net)+'" r="4" fill="'+(last.net>=0?'var(--gain)':'var(--loss)')+'"/>'
     +'<text x="'+(w-pad)+'" y="'+(ys(last.net)-8)+'" text-anchor="end" fill="var(--text)" font-size="12" font-weight="700">'+(last.net>=0?'+':'')+inr(last.net)+'</text></svg>'
-    +'<div class="note">'+hist.length+' din ka trend · pehla: '+hist[0].d+' → aaj: '+last.d+'</div>';
+    +'<div class="note">'+hist.length+'-day trend · first: '+hist[0].d+' → aaj: '+last.d+'</div>';
 }
 function plBars(t){
   const rows=[['Stocks',t.stockPL],['Mutual Funds',t.mfPL],['Bonds',t.bGain],['Loan Interest',t.lInt]];
@@ -591,9 +619,9 @@ function renderGraph(){
   var xirrBox='<div class="add-box"><h3>Return summary</h3><div style="display:flex;gap:28px;flex-wrap:wrap">'
     +'<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Absolute return</div><div class="num '+plClass(absr)+'" style="font-size:24px;font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+(t.invested?((absr>=0?'+':'')+absr.toFixed(1)+'%'):'—')+'</div></div>'
     +'<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">XIRR (salaana)</div><div class="num '+(xr==null?'':plClass(xr))+'" style="font-size:24px;font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+(xr==null?'—':((xr>=0?'+':'')+(xr*100).toFixed(1)+'%'))+'</div></div>'
-    +'</div><div class="note">Absolute = kul kitna badha. XIRR = time ko dekhte hue sahi salaana return (holdings ki buy-date honi chahiye).</div></div>';
+    +'</div><div class="note">Absolute = total growth. XIRR = true annualised return over time (holdings need buy dates).</div></div>';
   return renderEngagement()+xirrBox
-    +'<div class="add-box"><h3>Paisa kahan laga hai (current value)</h3>'+svgDonut(segs)+'</div>'
+    +'<div class="add-box"><h3>Where your money is (current value)</h3>'+svgDonut(segs)+'</div>'
     +'<div class="add-box"><h3>Net Profit / Loss — trend</h3>'+svgLine(state.history)+'</div>'
     +'<div class="add-box"><h3>Category-wise Profit / Loss</h3>'+plBars(t)+'</div>';
 }
@@ -633,14 +661,14 @@ function supportButtons(){
   return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'
     +(call?'<a class="add-btn" style="text-decoration:none" href="tel:'+attr(call)+'">📞 Call</a>':'')
     +(wa?'<a class="sec-btn" style="text-decoration:none" target="_blank" href="https://wa.me/'+wa+'">🟢 WhatsApp</a>':'')
-    +(!call&&!wa?'<span class="note">Support number abhi set nahi hai.</span>':'')+'</div>';
+    +(!call&&!wa?'<span class="note">Support number not set yet.</span>':'')+'</div>';
 }
 function renderSupport(){ return canSupport?renderAdminSupport():renderUserChat(); }
 function renderUserChat(){
-  var thread=supportMsgs.map(function(m){return bubble(m,'user');}).join('')||'<div class="empty">Koi baat-cheet nahi. Neeche apna sawaal likhein — hum jaldi reply karenge.</div>';
-  return '<div class="add-box"><h3>Support se baat karein</h3>'+supportButtons()
+  var thread=supportMsgs.map(function(m){return bubble(m,'user');}).join('')||'<div class="empty">No messages yet. Write your question below — we’ll reply soon.</div>';
+  return '<div class="add-box"><h3>Talk to support</h3>'+supportButtons()
     +'<div id="chatScroll" style="max-height:360px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px">'+thread+'</div>'
-    +'<div class="row"><input id="sup-msg" placeholder="Apni problem likhein…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\')sendUserMsg()"><button class="add-btn" onclick="sendUserMsg()">Bhejein</button></div></div>';
+    +'<div class="row"><input id="sup-msg" placeholder="Write your issue…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\')sendUserMsg()"><button class="add-btn" onclick="sendUserMsg()">Bhejein</button></div></div>';
 }
 async function loadUserChat(){
   try{var r=await sb.from('support_messages').select('*').eq('user_id',myId).order('created_at');supportMsgs=r.data||[];}catch(e){supportMsgs=[];}
@@ -656,11 +684,11 @@ function renderAdminSupport(){
   if(supportOpenUser){
     var c=supportConvos.find(function(x){return x.uid===supportOpenUser;});
     var thread=(c?c.msgs:[]).map(function(m){return bubble(m,'admin');}).join('')||'<div class="empty">—</div>';
-    return '<div class="add-box"><h3>'+escapeHtml(c?c.email:'')+' <span class="cancel-link" onclick="supportOpenUser=null;render()">← list par wapas</span></h3>'
+    return '<div class="add-box"><h3>'+escapeHtml(c?c.email:'')+' <span class="cancel-link" onclick="supportOpenUser=null;render()">← back to list</span></h3>'
       +'<div id="chatScroll" style="max-height:360px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px">'+thread+'</div>'
-      +'<div class="row"><input id="adm-msg" placeholder="Reply likhein…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\')sendAdminReply()"><button class="add-btn" onclick="sendAdminReply()">Reply</button></div></div>';
+      +'<div class="row"><input id="adm-msg" placeholder="Write a reply…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\')sendAdminReply()"><button class="add-btn" onclick="sendAdminReply()">Reply</button></div></div>';
   }
-  var list=supportConvos.length?supportConvos.map(function(c){return '<tr><td><span class="name">'+escapeHtml(c.email)+'</span><span class="tag">'+escapeHtml((c.last||'').slice(0,70))+'</span></td><td class="num">'+c.count+'</td><td><button class="edit" onclick="openConvo(\''+c.uid+'\')">Open</button></td></tr>';}).join(''):'<tr><td colspan="3" class="empty">Abhi koi support message nahi.</td></tr>';
+  var list=supportConvos.length?supportConvos.map(function(c){return '<tr><td><span class="name">'+escapeHtml(c.email)+'</span><span class="tag">'+escapeHtml((c.last||'').slice(0,70))+'</span></td><td class="num">'+c.count+'</td><td><button class="edit" onclick="openConvo(\''+c.uid+'\')">Open</button></td></tr>';}).join(''):'<tr><td colspan="3" class="empty">No support messages yet.</td></tr>';
   return '<div class="add-box"><h3>Support conversations</h3><table class="tbl"><thead><tr><th>User</th><th>Msgs</th><th></th></tr></thead><tbody>'+list+'</tbody></table></div>';
 }
 function renderSettings(){
@@ -669,23 +697,23 @@ function renderSettings(){
     +'<div class="fld"><label>Call number</label><input id="set-phone" value="'+attr(s.support_phone||'')+'" placeholder="+919812345678" style="width:180px"></div>'
     +'<div class="fld"><label>WhatsApp number</label><input id="set-wa" value="'+attr(s.support_whatsapp||'')+'" placeholder="919812345678" style="width:180px"></div>'
     +'<button class="add-btn" onclick="saveSupportNumbers()">Save</button></div>'
-    +'<div class="note">Ye number sabhi users ke Call/WhatsApp button me dikhega. WhatsApp me country code ke saath, bina + ke (jaise 9198...).</div></div>'
-    +'<div class="add-box"><h3>Announcement (sabko upar dikhega)</h3>'
-    +'<textarea id="set-ann" style="width:100%;min-height:70px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="Jaise: Kal maintenance rahega 2-3pm.">'+escapeHtml(s.announcement||'')+'</textarea>'
-    +'<div style="margin-top:8px"><button class="add-btn" onclick="saveAnnouncement()">Save</button> <span class="cancel-link" onclick="clearAnnouncement()">Banner hatao</span></div></div>'
+    +'<div class="note">This number appears on every user’s Call/WhatsApp button. For WhatsApp include the country code without + (e.g. 9198...).</div></div>'
+    +'<div class="add-box"><h3>Announcement (shown to everyone at the top)</h3>'
+    +'<textarea id="set-ann" style="width:100%;min-height:70px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="e.g. Maintenance tomorrow 2-3pm.">'+escapeHtml(s.announcement||'')+'</textarea>'
+    +'<div style="margin-top:8px"><button class="add-btn" onclick="saveAnnouncement()">Save</button> <span class="cancel-link" onclick="clearAnnouncement()">Remove banner</span></div></div>'
     +'<div class="add-box"><h3>Premium — UPI payment</h3><div class="row">'
-    +'<div class="fld"><label>UPI ID (paise yahan aayenge)</label><input id="set-upi" value="'+attr(s.upi_id||'')+'" placeholder="yourname@okhdfcbank" style="width:220px"></div>'
+    +'<div class="fld"><label>UPI ID (payments arrive here)</label><input id="set-upi" value="'+attr(s.upi_id||'')+'" placeholder="yourname@okhdfcbank" style="width:220px"></div>'
     +'<div class="fld"><label>Premium price (₹)</label><input id="set-price" value="'+attr(s.premium_price||'')+'" placeholder="99" style="width:110px"></div>'
     +'<button class="add-btn" onclick="savePremiumSettings()">Save</button></div>'
-    +'<div class="fld" style="margin-top:10px"><label>Premium benefits (list — har line ek point)</label><textarea id="set-benefits" style="width:100%;min-height:80px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="• PDF report&#10;• Price alerts">'+escapeHtml(s.premium_benefits||'')+'</textarea></div>'
+    +'<div class="fld" style="margin-top:10px"><label>Premium benefits (one point per line)</label><textarea id="set-benefits" style="width:100%;min-height:80px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="• PDF report&#10;• Price alerts">'+escapeHtml(s.premium_benefits||'')+'</textarea></div>'
     +'<div style="margin-top:8px"><button class="add-btn" onclick="savePremiumSettings()">Save benefits</button></div>'
-    +'<div class="note">User Premium tab me ye UPI ID, price aur benefits dekhega. Paise aane par Accounts tab me "Payment requests" me approve karo.</div></div>'
+    +'<div class="note">Users see this UPI ID, price and benefits on the Premium tab. When payment arrives, approve it under "Payment requests" in the Accounts tab.</div></div>'
     +'<div class="add-box"><h3>Payment methods ON / OFF</h3>'
     +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;margin:8px 0;cursor:pointer"><input type="checkbox" '+(s.upi_on!==false?'checked':'')+' onchange="setToggle(\'upi_on\',this.checked)" style="width:16px;height:16px"> Manual UPI ON (UPI ID + UTR approve)</label>'
-    +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;margin:8px 0;cursor:pointer"><input type="checkbox" '+(s.razorpay_on?'checked':'')+' onchange="setToggle(\'razorpay_on\',this.checked)" style="width:16px;height:16px"> Razorpay auto-payment ON (turant premium)</label>'
-    +'<div class="note"><b>Razorpay ON karne se pehle</b> ek baar Vercel me 4 keys daalni hongi (README me steps — copy-paste, coding nahi). Uske baad ye toggle jab chaaho ON/OFF karo. Dono ek saath bhi chal sakte hain.</div></div>'
-    +'<div class="add-box"><h3>Company / Legal info</h3><div class="note">Ye Terms/Privacy/Refund pages me dikhega (Razorpay ke liye zaroori).</div><div class="row" style="margin-top:8px">'
-    +'<div class="fld"><label>Company / Owner naam</label><input id="set-co" value="'+attr(s.company_name||'')+'" placeholder="Statcon Energiaa / aapka naam" style="width:220px"></div>'
+    +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;margin:8px 0;cursor:pointer"><input type="checkbox" '+(s.razorpay_on?'checked':'')+' onchange="setToggle(\'razorpay_on\',this.checked)" style="width:16px;height:16px"> Razorpay auto-payment ON (instant premium)</label>'
+    +'<div class="note"><b>Before turning Razorpay ON</b>, add 4 keys once in Vercel (steps in README — copy-paste, no coding). After that, toggle this ON/OFF anytime. Both can run together.</div></div>'
+    +'<div class="add-box"><h3>Company / Legal info</h3><div class="note">Shown on your Terms/Privacy/Refund pages (required for Razorpay).</div><div class="row" style="margin-top:8px">'
+    +'<div class="fld"><label>Company / Owner name</label><input id="set-co" value="'+attr(s.company_name||'')+'" placeholder="Your company / name" style="width:220px"></div>'
     +'<div class="fld"><label>Support email</label><input id="set-cem" value="'+attr(s.contact_email||'')+'" placeholder="support@energiaa.in" style="width:200px"></div></div>'
     +'<div class="fld" style="margin-top:10px"><label>Address</label><input id="set-cad" value="'+attr(s.contact_address||'')+'" placeholder="City, State" style="width:100%"></div>'
     +'<div style="margin-top:8px"><button class="add-btn" onclick="saveCompanyInfo()">Save</button></div></div>';
@@ -696,7 +724,7 @@ async function saveCompanyInfo(){
   var ad=(document.getElementById('set-cad').value||'').trim();
   var r=await sb.from('app_settings').upsert({id:1,company_name:co,contact_email:em,contact_address:ad,updated_at:new Date().toISOString()});
   if(r.error){toast(r.error.message);return;}
-  appSettings.company_name=co;appSettings.contact_email=em;appSettings.contact_address=ad;render();toast('Company info save ho gayi');
+  appSettings.company_name=co;appSettings.contact_email=em;appSettings.contact_address=ad;render();toast('Company info saved');
 }
 async function savePremiumSettings(){
   var upi=(document.getElementById('set-upi').value||'').trim();
@@ -704,18 +732,18 @@ async function savePremiumSettings(){
   var ben=(document.getElementById('set-benefits').value||'').trim();
   var r=await sb.from('app_settings').upsert({id:1,upi_id:upi,premium_price:price,premium_benefits:ben,updated_at:new Date().toISOString()});
   if(r.error){toast(r.error.message);return;}
-  appSettings.upi_id=upi;appSettings.premium_price=price;appSettings.premium_benefits=ben;render();toast('Premium settings save ho gayi');
+  appSettings.upi_id=upi;appSettings.premium_price=price;appSettings.premium_benefits=ben;render();toast('Premium settings saved');
 }
 async function saveAnnouncement(){
   var ann=(document.getElementById('set-ann').value||'').trim();
   var r=await sb.from('app_settings').upsert({id:1,announcement:ann,updated_at:new Date().toISOString()});
   if(r.error){toast(r.error.message);return;}
-  appSettings.announcement=ann;render();toast('Announcement save ho gaya');
+  appSettings.announcement=ann;render();toast('Announcement saved');
 }
 async function clearAnnouncement(){
   var r=await sb.from('app_settings').upsert({id:1,announcement:'',updated_at:new Date().toISOString()});
   if(r.error){toast(r.error.message);return;}
-  appSettings.announcement='';render();toast('Banner hata diya');
+  appSettings.announcement='';render();toast('Banner removed');
 }
 async function loadSupportConvos(){
   try{
@@ -740,7 +768,7 @@ async function saveSupportNumbers(){
   var wa=(document.getElementById('set-wa').value||'').trim();
   var r=await sb.from('app_settings').upsert({id:1,support_phone:phone,support_whatsapp:wa,updated_at:new Date().toISOString()});
   if(r.error){toast(r.error.message);return;}
-  appSettings.support_phone=phone;appSettings.support_whatsapp=wa;render();toast('Support number save ho gaya');
+  appSettings.support_phone=phone;appSettings.support_whatsapp=wa;render();toast('Support number saved');
 }
 function setupRealtime(){
   if(supportChannel||!sb)return;
@@ -765,31 +793,31 @@ function computeStreak(){
 }
 function earnedBadges(){
   var t=totals(),m=state.meta||{},hold=state.stocks.length+state.mfs.length+state.bonds.length+state.loans.length,b=[];
-  if(hold>=1)b.push({e:'🌱',n:'Pehla Kadam'});
+  if(hold>=1)b.push({e:'🌱',n:'First Step'});
   if(hold>=5)b.push({e:'📈',n:'Investor'});
   if(hold>=10)b.push({e:'💼',n:'Portfolio Builder'});
-  if((m.streak||0)>=3)b.push({e:'🔥',n:'3-din Streak'});
-  if((m.streak||0)>=7)b.push({e:'⚡',n:'7-din Streak'});
-  if(t.net>0)b.push({e:'💚',n:'Profit me'});
+  if((m.streak||0)>=3)b.push({e:'🔥',n:'3-day Streak'});
+  if((m.streak||0)>=7)b.push({e:'⚡',n:'7-day Streak'});
+  if(t.net>0)b.push({e:'💚',n:'In Profit'});
   if(state.stocks.length&&state.mfs.length&&state.bonds.length)b.push({e:'🧭',n:'Diversified'});
   return b;
 }
 function onboardItems(){
   var s=state,tot=s.stocks.length+s.mfs.length+s.bonds.length+s.loans.length;
   var cats=[s.stocks,s.mfs,s.bonds,s.loans].filter(function(a){return a.length;}).length;
-  return [['Pehla holding add karo',tot>0],['3 holdings add karo',tot>=3],['2 alag category use karo (stock/MF/bond/loan)',cats>=2],['Ek baar ⬇ Backup lo',!!(s.meta&&s.meta.backedUp)]];
+  return [['Add your first holding',tot>0],['Add 3 holdings',tot>=3],['Use 2 different categories (stock/MF/bond/loan)',cats>=2],['Take a ⬇ Backup once',!!(s.meta&&s.meta.backedUp)]];
 }
 function shareWhatsApp(){
   var t=totals(),pct=t.invested?(t.net/t.invested*100):0;
-  var txt='Maine apna investment portfolio track karna shuru kiya 📊 Abhi tak '+(pct>=0?'+':'')+pct.toFixed(1)+'%! Tum bhi free try karo: '+window.location.origin;
+  var txt='I started tracking my investment portfolio 📊 So far '+(pct>=0?'+':'')+pct.toFixed(1)+'%! Try it free too: '+window.location.origin;
   window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
 }
 function renderEngagement(){
   var m=state.meta||{},badges=earnedBadges();
   var items=onboardItems(),done=items.filter(function(i){return i[1];}).length,pct=Math.round(done/items.length*100);
-  var ob=pct<100?'<div class="add-box"><h3>Shuruaat — '+pct+'% poora</h3>'+items.map(function(i){return '<div style="margin:6px 0;font-size:13px">'+(i[1]?'✅':'⬜')+' '+i[0]+'</div>';}).join('')+'</div>':'';
-  var badgeHtml=badges.length?badges.map(function(b){return '<span style="display:inline-block;background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;margin:3px 5px 0 0;font-size:12px">'+b.e+' '+b.n+'</span>';}).join(''):'<span class="note">Holdings add karke badges kamao!</span>';
-  return ob+'<div class="add-box"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="margin:0">🔥 '+(m.streak||0)+'-din streak'+(m.bestStreak?' <span style="color:var(--muted);font-size:12px">· best '+m.bestStreak+'</span>':'')+'</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="sec-btn" onclick="generateReport()">⬇ PDF Report</button><button class="sec-btn" onclick="shareWhatsApp()">🟢 Share</button></div></div><div style="margin-top:12px">'+badgeHtml+'</div></div>';
+  var ob=pct<100?'<div class="add-box"><h3>Getting started — '+pct+'% complete</h3>'+items.map(function(i){return '<div style="margin:6px 0;font-size:13px">'+(i[1]?'✅':'⬜')+' '+i[0]+'</div>';}).join('')+'</div>':'';
+  var badgeHtml=badges.length?badges.map(function(b){return '<span style="display:inline-block;background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;margin:3px 5px 0 0;font-size:12px">'+b.e+' '+b.n+'</span>';}).join(''):'<span class="note">Add holdings to earn badges!</span>';
+  return ob+'<div class="add-box"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="margin:0">🔥 '+(m.streak||0)+'-day streak'+(m.bestStreak?' <span style="color:var(--muted);font-size:12px">· best '+m.bestStreak+'</span>':'')+'</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="sec-btn" onclick="generateReport()">⬇ PDF Report</button><button class="sec-btn" onclick="shareWhatsApp()">🟢 Share</button></div></div><div style="margin-top:12px">'+badgeHtml+'</div></div>';
 }
 
 /* ---------- NEWS / TIPS ---------- */
@@ -798,19 +826,19 @@ async function loadNews(){
   render();
 }
 function renderNews(){
-  var post=canSettings?'<div class="add-box"><h3>Naya News / Tip post karein</h3>'
-    +'<div class="fld" style="margin-bottom:8px"><label>Title</label><input id="news-title" placeholder="Jaise: Market tip" style="width:100%"></div>'
-    +'<textarea id="news-body" placeholder="Poori baat likhein…" style="width:100%;min-height:70px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px"></textarea>'
-    +'<div style="margin-top:8px"><button class="add-btn" onclick="postNews()">Post karo</button></div></div>':'';
-  var list=news.length?news.map(function(n){return '<div class="add-box"><div style="display:flex;justify-content:space-between;gap:8px"><h3 style="margin:0">'+escapeHtml(n.title||'')+'</h3>'+(canSettings?'<span class="cancel-link" onclick="deleteNews(\''+n.id+'\')">hatao</span>':'')+'</div><div style="font-size:13px;margin-top:6px;white-space:pre-wrap">'+escapeHtml(n.body||'')+'</div><div class="note">'+fmtTime(n.created_at)+'</div></div>';}).join(''):'<div class="empty">Abhi koi news nahi.</div>';
+  var post=canSettings?'<div class="add-box"><h3>Post a news / tip</h3>'
+    +'<div class="fld" style="margin-bottom:8px"><label>Title</label><input id="news-title" placeholder="e.g. Market tip" style="width:100%"></div>'
+    +'<textarea id="news-body" placeholder="Write the full message…" style="width:100%;min-height:70px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px"></textarea>'
+    +'<div style="margin-top:8px"><button class="add-btn" onclick="postNews()">Post</button></div></div>':'';
+  var list=news.length?news.map(function(n){return '<div class="add-box"><div style="display:flex;justify-content:space-between;gap:8px"><h3 style="margin:0">'+escapeHtml(n.title||'')+'</h3>'+(canSettings?'<span class="cancel-link" onclick="deleteNews(\''+n.id+'\')">remove</span>':'')+'</div><div style="font-size:13px;margin-top:6px;white-space:pre-wrap">'+escapeHtml(n.body||'')+'</div><div class="note">'+fmtTime(n.created_at)+'</div></div>';}).join(''):'<div class="empty">No news yet.</div>';
   return post+list;
 }
 async function postNews(){
   var title=(document.getElementById('news-title').value||'').trim(),body=(document.getElementById('news-body').value||'').trim();
-  if(!title&&!body){toast('Kuch to likhein');return;}
+  if(!title&&!body){toast('Please write something');return;}
   var r=await sb.from('news').insert({title:title,body:body});
   if(r.error){toast(r.error.message);return;}
-  await loadNews();toast('Post ho gaya');
+  await loadNews();toast('Posted');
 }
 async function deleteNews(id){
   var r=await sb.from('news').delete().eq('id',id);
@@ -832,13 +860,13 @@ async function loadLeaderboard(){
 function renderLeaderboard(){
   var t=totals();var mypct=t.invested?(t.net/t.invested*100):0;
   var settings='<div class="add-box"><h3>Leaderboard</h3>'
-    +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" '+(myLb.opted_in?'checked':'')+' onchange="setLbOptIn(this.checked)" style="width:16px;height:16px"> Mujhe leaderboard par dikhao (sirf % return + naam — rupaye kabhi nahi)</label>'
-    +'<div class="note">Aapka abhi ka return: <b class="'+plClass(mypct)+'">'+(mypct>=0?'+':'')+mypct.toFixed(1)+'%</b>.</div></div>';
+    +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" '+(myLb.opted_in?'checked':'')+' onchange="setLbOptIn(this.checked)" style="width:16px;height:16px"> Show me on the leaderboard (only % return + name — never rupees)</label>'
+    +'<div class="note">Your current return: <b class="'+plClass(mypct)+'">'+(mypct>=0?'+':'')+mypct.toFixed(1)+'%</b>.</div></div>';
   var rows=leaderboard.length?leaderboard.map(function(u,i){var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
-    return '<tr><td>'+medal+'</td><td><span class="name">'+escapeHtml(u.name||'Anonymous')+'</span>'+(u.user_id===myId?' <span class="tag" style="color:var(--brass);display:inline">aap</span>':'')+'</td><td class="num '+plClass(u.pct)+'">'+(u.pct>=0?'+':'')+Number(u.pct).toFixed(1)+'%</td></tr>';}).join(''):'<tr><td colspan="3" class="empty">Abhi koi opt-in nahi — sabse pehle aap ban jao!</td></tr>';
+    return '<tr><td>'+medal+'</td><td><span class="name">'+escapeHtml(u.name||'Anonymous')+'</span>'+(u.user_id===myId?' <span class="tag" style="color:var(--brass);display:inline">aap</span>':'')+'</td><td class="num '+plClass(u.pct)+'">'+(u.pct>=0?'+':'')+Number(u.pct).toFixed(1)+'%</td></tr>';}).join(''):'<tr><td colspan="3" class="empty">No one has opted in yet — be the first!</td></tr>';
   return settings+'<div class="add-box"><h3>🏆 Top returns</h3><table class="tbl"><thead><tr><th>#</th><th>Naam</th><th>Return</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
-async function setLbOptIn(v){myLb.opted_in=v;await updateMyLeaderboard();await loadLeaderboard();toast(v?'Leaderboard par aa gaye 🏆':'Leaderboard se hat gaye');}
+async function setLbOptIn(v){myLb.opted_in=v;await updateMyLeaderboard();await loadLeaderboard();toast(v?'You’re on the leaderboard 🏆':'Removed from leaderboard');}
 
 /* ---------- PRICE ALERTS (in-app) ---------- */
 function alertCur(a){var arr=state[a.k]||[];var it=arr.find(function(x){return x.id===a.hid;});if(!it)return null;return a.k==='stocks'?(it.currentPrice||it.buyPrice):(it.currentNav||it.buyNav);}
@@ -846,26 +874,26 @@ function renderAlerts(){
   var opts='';
   state.stocks.forEach(function(s){opts+='<option value="stocks:'+s.id+'">'+escapeHtml(s.symbol)+' (stock)</option>';});
   state.mfs.forEach(function(m){opts+='<option value="mfs:'+m.id+'">'+escapeHtml(m.name)+' (MF)</option>';});
-  var add='<div class="add-box"><h3>Naya price alert</h3><div class="row">'
-    +'<div class="fld"><label>Holding</label><select id="al-h">'+(opts||'<option value="">-- pehle stock/MF add karo --</option>')+'</select></div>'
-    +'<div class="fld"><label>Jab price</label><select id="al-dir"><option value="above">upar jaaye (≥)</option><option value="below">neeche aaye (≤)</option></select></div>'
+  var add='<div class="add-box"><h3>New price alert</h3><div class="row">'
+    +'<div class="fld"><label>Holding</label><select id="al-h">'+(opts||'<option value="">-- add a stock/MF first --</option>')+'</select></div>'
+    +'<div class="fld"><label>When price</label><select id="al-dir"><option value="above">goes above (≥)</option><option value="below">goes below (≤)</option></select></div>'
     +'<div class="fld"><label>Target (₹)</label><input id="al-tgt" type="number" step="0.01" style="width:110px"></div>'
     +'<button class="add-btn" onclick="addAlert()">Add</button></div>'
-    +'<div class="note">Alert tab check hota hai jab price update ho (auto market-hours me, ya "Live Rates Update" par). Abhi in-app; push/email baad me.</div></div>';
+    +'<div class="note">Alerts are checked when prices update (auto during market hours, or via "Live Rates Update"). In-app for now; push/email later.</div></div>';
   var list=(state.alerts||[]).map(function(a){var cur=alertCur(a);
     return '<tr><td><span class="name">'+escapeHtml(a.label)+'</span><span class="tag">'+(a.dir==='above'?'≥':'≤')+' '+inr2(a.target)+(a.triggeredAt?' · ✅ hit '+fmtTime(a.triggeredAt):'')+'</span></td><td class="num">'+(cur!=null?inr2(cur):'—')+'</td><td><button class="del" onclick="delAlert(\''+a.id+'\')">✕</button></td></tr>';}).join('');
-  return add+'<div class="add-box"><h3>Aapke alerts</h3><table class="tbl"><thead><tr><th>Alert</th><th>Abhi</th><th></th></tr></thead><tbody>'+(list||'<tr><td colspan="3" class="empty">Koi alert nahi.</td></tr>')+'</tbody></table></div>';
+  return add+'<div class="add-box"><h3>Your alerts</h3><table class="tbl"><thead><tr><th>Alert</th><th>Now</th><th></th></tr></thead><tbody>'+(list||'<tr><td colspan="3" class="empty">No alerts.</td></tr>')+'</tbody></table></div>';
 }
 function addAlert(){
-  if(!myPremium){toast('Price alerts Premium me hain ⭐');activeTab='premium';render();return;}
-  var hv=document.getElementById('al-h').value;if(!hv){toast('Holding chuno');return;}
+  if(!myPremium){toast('Price alerts are a Premium feature ⭐');activeTab='premium';render();return;}
+  var hv=document.getElementById('al-h').value;if(!hv){toast('Choose a holding');return;}
   var parts=hv.split(':'),k=parts[0],hid=parts[1];
   var dir=document.getElementById('al-dir').value,tgt=+document.getElementById('al-tgt').value;
-  if(!tgt){toast('Target price daalo');return;}
+  if(!tgt){toast('Enter a target price');return;}
   var it=(state[k]||[]).find(function(x){return x.id===hid;});if(!it)return;
   var label=k==='stocks'?it.symbol:it.name;
   state.alerts=state.alerts||[];state.alerts.push({id:uid(),k:k,hid:hid,dir:dir,target:tgt,label:label,triggeredAt:null});
-  saveState();render();toast('Alert set ho gaya');
+  saveState();render();toast('Alert set');
 }
 function delAlert(id){state.alerts=(state.alerts||[]).filter(function(a){return a.id!==id;});saveState();render();}
 function checkAlerts(){
@@ -932,57 +960,57 @@ function buildReportHTML(){
     +tbl('Stocks',['Symbol','Qty','Invested','Value','P/L'],st)
     +tbl('Mutual Funds',['Fund','Units','Invested','Value','P/L'],mf)
     +tbl('Bonds',['Bond','Invested','Value','P/L'],bd)
-    +tbl('Loans / Interest',['Kisko diya','Principal','Interest','Total'],ln)
+    +tbl('Loans / Interest',['Lent to','Principal','Interest','Total'],ln)
     +'<div class="foot">Portfolio Bahi-Khata — '+d+'</div>'
     +'</body></html>';
 }
 function generateReport(){
-  if(!myPremium){toast('PDF report Premium me hai ⭐');activeTab='premium';render();return;}
+  if(!myPremium){toast('PDF report is a Premium feature ⭐');activeTab='premium';render();return;}
   var w=window.open('','_blank');
-  if(!w){toast('Popup allow karke dobara try karein');return;}
+  if(!w){toast('Allow pop-ups and try again');return;}
   w.document.write(buildReportHTML());w.document.close();w.focus();
   setTimeout(function(){try{w.print();}catch(e){}},500);
 }
 
 /* ---------- PREMIUM (manual UPI) ---------- */
-function premiumBenefitsText(){return appSettings.premium_benefits||'• PDF report download\n• Price alerts\n• Unlimited holdings\n• Priority support\n• Aage ke naye features';}
+function premiumBenefitsText(){return appSettings.premium_benefits||'• PDF report download\n• Price alerts\n• Unlimited holdings\n• Priority support\n• New features first';}
 function renderPremium(){
   var out='';
   if(myPremium){
-    out+='<div class="add-box"><h3>⭐ Aap Premium ho!</h3><div class="note">'+(myIsPremiumFlag&&!myPremiumUntil?'Lifetime premium 🎉':(myPremiumUntil?('Valid till '+new Date(myPremiumUntil).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})):'Active'))+'</div></div>';
+    out+='<div class="add-box"><h3>⭐ You’re Premium!</h3><div class="note">'+(myIsPremiumFlag&&!myPremiumUntil?'Lifetime premium 🎉':(myPremiumUntil?('Valid till '+new Date(myPremiumUntil).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})):'Active'))+'</div></div>';
   }else{
     var upi=(appSettings.upi_id||'').trim(),price=(appSettings.premium_price||'').trim();
     var amt=(price||'').replace(/[^0-9.]/g,'');
     var methods='';
     if(appSettings.razorpay_on){
-      methods+='<button class="add-btn" style="margin-bottom:10px" onclick="payRazorpay()">💳 Online pay karo (turant premium)</button>'
-        +'<div class="note" style="margin-bottom:12px">Card / UPI / Netbanking — pay karte hi premium apne-aap chalu.</div>';
+      methods+='<button class="add-btn" style="margin-bottom:10px" onclick="payRazorpay()">💳 Pay online (instant premium)</button>'
+        +'<div class="note" style="margin-bottom:12px">Card / UPI / Netbanking — premium activates instantly.</div>';
     }
     if(appSettings.upi_on!==false && upi){
-      methods+='<div style="border-top:1px solid var(--line);padding-top:12px"><div class="note">Ya UPI se seedha bhejein, phir UTR daalein (admin verify karega):</div>'
+      methods+='<div style="border-top:1px solid var(--line);padding-top:12px"><div class="note">Or send directly via UPI, then enter the UTR (admin will verify):</div>'
         +'<div style="font-size:18px;font-weight:700;margin:8px 0">UPI: '+escapeHtml(upi)+'</div>'
-        +'<a class="sec-btn" style="text-decoration:none" href="upi://pay?pa='+encodeURIComponent(upi)+'&pn='+encodeURIComponent('Portfolio')+(amt?'&am='+encodeURIComponent(amt):'')+'&cu=INR">UPI app se pay karo</a>'
+        +'<a class="sec-btn" style="text-decoration:none" href="upi://pay?pa='+encodeURIComponent(upi)+'&pn='+encodeURIComponent('Portfolio')+(amt?'&am='+encodeURIComponent(amt):'')+'&cu=INR">Pay with a UPI app</a>'
         +'<div class="row" style="margin-top:12px"><div class="fld"><label>UTR / Ref no.</label><input id="pr-utr" placeholder="12-digit reference" style="width:200px"></div><button class="add-btn" onclick="submitPayment()">Submit</button></div></div>';
     }
-    if(!methods)methods='<div class="note">Payment jald shuru ho raha hai.</div>';
-    out+='<div class="add-box"><h3>Premium lein '+(price?'— ₹'+escapeHtml(price):'')+'</h3>'+methods+'</div>';
+    if(!methods)methods='<div class="note">Payments are coming soon.</div>';
+    out+='<div class="add-box"><h3>Get Premium '+(price?'— ₹'+escapeHtml(price):'')+'</h3>'+methods+'</div>';
   }
-  out+='<div class="add-box"><h3>Premium me kya milega</h3><div style="font-size:13px;white-space:pre-wrap">'+escapeHtml(premiumBenefitsText())+'</div></div>';
-  out+='<div class="add-box"><h3>Dost bulao, premium pao 🎁</h3><div class="note">Aapke link se dost signup kare to <b>dono ko 1 mahina extra premium</b>:</div>'
+  out+='<div class="add-box"><h3>What you get with Premium</h3><div style="font-size:13px;white-space:pre-wrap">'+escapeHtml(premiumBenefitsText())+'</div></div>';
+  out+='<div class="add-box"><h3>Invite friends, earn premium 🎁</h3><div class="note">When a friend signs up with your link, <b>you both get 1 extra month of premium</b>:</div>'
     +'<div style="font-size:13px;margin:8px 0;word-break:break-all;color:var(--brass)">'+window.location.origin+'/?ref='+escapeHtml(myRefCode)+'</div>'
-    +'<button class="sec-btn" onclick="shareReferral()">🟢 WhatsApp par bhejo</button></div>';
+    +'<button class="sec-btn" onclick="shareReferral()">🟢 Share on WhatsApp</button></div>';
   return out+renderAccountBox();
 }
 async function payRazorpay(){
-  if(typeof Razorpay==='undefined'){toast('Razorpay load nahi hua — page refresh karein');return;}
+  if(typeof Razorpay==='undefined'){toast('Razorpay didn’t load — refresh the page');return;}
   var price=(appSettings.premium_price||'').replace(/[^0-9.]/g,'')||'99';
   var o;
-  try{var r=await fetch('/api/rzp-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:price})});o=await r.json();if(!r.ok||!o.order_id){toast(o.error||'Order fail');return;}}catch(e){toast('Order fail — internet/keys check karein');return;}
+  try{var r=await fetch('/api/rzp-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:price})});o=await r.json();if(!r.ok||!o.order_id){toast(o.error||'Order fail');return;}}catch(e){toast('Order failed — check internet/keys');return;}
   var opt={key:o.key_id,order_id:o.order_id,amount:o.amount,currency:'INR',name:'Premium',description:'Portfolio Premium',prefill:{email:myEmail,contact:myPhone},theme:{color:'#C9A227'},
     handler:async function(resp){
       try{var vr=await fetch('/api/rzp-verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpay_order_id:resp.razorpay_order_id,razorpay_payment_id:resp.razorpay_payment_id,razorpay_signature:resp.razorpay_signature,user_id:myId,days:30})});
         var vj=await vr.json();
-        if(vj.ok){toast('Premium activate ho gaya 🎉');sendMail(myEmail,'Premium activate ho gaya ⭐','<p>Namaste '+escapeHtml(myName||'')+',</p><p>Aapka online payment mil gaya aur Premium activate ho gaya hai. Dhanyavaad!</p>');try{var s=await sb.from('profiles').select('is_premium,premium_until').eq('id',myId).maybeSingle();if(s.data){myPremiumUntil=s.data.premium_until;myIsPremiumFlag=!!s.data.is_premium;myPremium=true;}}catch(e){myPremium=true;}render();}
+        if(vj.ok){toast('Premium activated 🎉');sendMail(myEmail,'Premium activated ⭐','<p>Hi '+escapeHtml(myName||'')+',</p><p>We’ve received your online payment and Premium is now active. Thank you!</p>');try{var s=await sb.from('profiles').select('is_premium,premium_until').eq('id',myId).maybeSingle();if(s.data){myPremiumUntil=s.data.premium_until;myIsPremiumFlag=!!s.data.is_premium;myPremium=true;}}catch(e){myPremium=true;}render();}
         else{toast('Verify fail: '+(vj.error||''));}
       }catch(e){toast('Verify error');}
     }};
@@ -995,14 +1023,14 @@ async function setToggle(field,val){
   appSettings[field]=val;render();toast(field+' = '+(val?'ON':'OFF'));
 }
 async function submitPayment(){
-  var utr=(document.getElementById('pr-utr').value||'').trim();if(!utr){toast('UTR / reference daalo');return;}
+  var utr=(document.getElementById('pr-utr').value||'').trim();if(!utr){toast('Enter the UTR / reference');return;}
   var r=await sb.from('payment_requests').insert({user_id:myId,amount:(appSettings.premium_price||''),utr:utr,plan:'premium',status:'pending'});
   if(r.error){toast(r.error.message);return;}
-  toast('Request bhej di ✅ — admin verify karega');
+  toast('Request sent ✅ — admin will verify');
 }
 function shareReferral(){
   var link=window.location.origin+'/?ref='+myRefCode;
-  var txt='Main is portfolio app se apne investments track karta hoon 📊 Tum bhi try karo, dono ko 1 mahina free premium milega: '+link;
+  var txt='I track my investments with this portfolio app 📊 Try it too — we both get 1 month of free premium: '+link;
   window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
 }
 async function loadPaymentReqs(){
@@ -1013,21 +1041,21 @@ async function loadPaymentReqs(){
 async function approvePayment(reqId,uid){
   var until=new Date();until.setDate(until.getDate()+30);
   var r1=await sb.from('profiles').update({premium_until:until.toISOString()}).eq('id',uid);
-  if(r1.error){toast('Premium dene me dikkat: '+r1.error.message+' (sirf super admin de sakta hai)');return;}
+  if(r1.error){toast('Premium dene me dikkat: '+r1.error.message+' (only super admin can grant)');return;}
   await sb.from('payment_requests').update({status:'approved'}).eq('id',reqId);
   var u=(adminUsers||[]).find(function(x){return x.id===uid;});
-  if(u&&u.email)sendMail(u.email,'Premium activate ho gaya ⭐','<p>Namaste '+escapeHtml(u.name||'')+',</p><p>Aapka Premium activate ho gaya hai (30 din). Dhanyavaad!</p>');
-  await loadPaymentReqs();await loadAdminUsers();toast('Premium de diya (30 din)');
+  if(u&&u.email)sendMail(u.email,'Premium activated ⭐','<p>Hi '+escapeHtml(u.name||'')+',</p><p>Your Premium is now active (30 days). Thank you!</p>');
+  await loadPaymentReqs();await loadAdminUsers();toast('Premium granted (30 days)');
 }
 async function rejectPayment(reqId){
   await sb.from('payment_requests').update({status:'rejected'}).eq('id',reqId);
-  await loadPaymentReqs();toast('Request reject ho gayi');
+  await loadPaymentReqs();toast('Request rejected');
 }
 async function grantDays(uid,days){
   var until=new Date();until.setDate(until.getDate()+days);
   var r=await sb.from('profiles').update({premium_until:until.toISOString()}).eq('id',uid);
   if(r.error){toast(r.error.message);return;}
-  await loadAdminUsers();toast(days+' din premium de diya');
+  await loadAdminUsers();toast(days+' days of premium granted');
 }
 
 function expiryBanner(){
@@ -1036,27 +1064,45 @@ function expiryBanner(){
   if(!myPremiumUntil)return '';
   var days=Math.ceil((new Date(myPremiumUntil)-new Date())/864e5);
   if(days>5)return '';
-  var msg=days<0?'Aapka Premium khatam ho gaya hai.':(days===0?'Aapka Premium aaj khatam ho raha hai.':'Aapka Premium '+days+' din me khatam ho raha hai.');
-  return '<div style="background:var(--surface2);border:1px solid var(--loss);border-left:3px solid var(--loss);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>⏰ '+msg+'</span><button class="sec-btn" onclick="activeTab=\'premium\';render()">Renew karo</button></div>';
+  var msg=days<0?'Your Premium has expired.':(days===0?'Your Premium expires today.':'Your Premium expires in '+days+' days.');
+  return '<div style="background:var(--surface2);border:1px solid var(--loss);border-left:3px solid var(--loss);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>⏰ '+msg+'</span><button class="sec-btn" onclick="activeTab=\'premium\';render()">Renew</button></div>';
 }
 async function sendMail(to,subject,html){
   try{await fetch('/api/send-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:to,subject:subject,html:html})});}catch(e){}
 }
 function renderAccountBox(){
-  return '<div class="add-box"><h3>Mera account</h3>'
+  return '<div class="add-box"><h3>My account</h3>'
     +'<div class="note">'+escapeHtml(myName||'')+' · '+escapeHtml(myEmail||'')+(myPhone?' · 📱 '+escapeHtml(myPhone):'')+'</div>'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="sec-btn" onclick="exportData()">⬇ Mera data download</button><button class="sec-btn" style="border-color:var(--loss);color:var(--loss)" onclick="deleteAccount()">Account delete karo</button></div>'
-    +'<div class="note">Delete karne par aapka saara data hamesha ke liye hat jayega — wapas nahi aayega.</div></div>';
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="sec-btn" onclick="exportData()">⬇ Download my data</button><button class="sec-btn" style="border-color:var(--loss);color:var(--loss)" onclick="deleteAccount()">Delete my account</button></div>'
+    +'<div class="note">Deleting removes all your data permanently — it cannot be recovered.</div></div>';
 }
-async function deleteAccount(){
-  if(!confirm('Pakka? Aapka account aur saara data hamesha ke liye delete ho jayega.'))return;
+function deleteAccount(){
+  uiConfirm('Delete account?','This permanently deletes your account and all your data. This cannot be undone.',function(){doDeleteAccount();},'Delete');
+}
+async function doDeleteAccount(){
   try{await sb.from('portfolios').delete().eq('user_id',myId);}catch(e){}
   try{await sb.from('leaderboard').delete().eq('user_id',myId);}catch(e){}
   try{await sb.from('payment_requests').delete().eq('user_id',myId);}catch(e){}
   try{await sb.from('support_messages').delete().eq('user_id',myId);}catch(e){}
   try{const {data:{session}}=await sb.auth.getSession();await fetch('/api/delete-account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:session&&session.access_token})});}catch(e){}
   try{await sb.auth.signOut();}catch(e){}
-  myId=null;toast('Account delete ho gaya');renderLanding();
+  myId=null;toast('Account deleted');renderLanding();
+}
+
+/* ---------- IN-APP MODAL (replaces browser prompt/confirm) ---------- */
+function uiModal(opts){
+  var ov=document.createElement('div');ov.className='modal-ov';
+  ov.innerHTML='<div class="modal"><h3>'+opts.title+'</h3><div class="modal-body">'+(opts.html||'')+'</div>'
+    +'<div class="modal-actions"><button class="sec-btn" data-x="c">'+(opts.cancelText||'Cancel')+'</button><button class="add-btn" data-x="o">'+(opts.okText||'OK')+'</button></div></div>';
+  document.body.appendChild(ov);
+  function close(){if(ov.parentNode)document.body.removeChild(ov);}
+  ov.querySelector('[data-x=c]').onclick=function(){close();if(opts.onCancel)opts.onCancel();};
+  ov.querySelector('[data-x=o]').onclick=function(){var r=opts.onOk?opts.onOk(ov):true;if(r!==false)close();};
+  ov.addEventListener('click',function(e){if(e.target===ov){close();if(opts.onCancel)opts.onCancel();}});
+  var f=ov.querySelector('input,textarea');if(f){f.focus();f.onkeydown=function(e){if(e.key==='Enter')ov.querySelector('[data-x=o]').click();};}
+}
+function uiConfirm(title,msg,onYes,yesText){
+  uiModal({title:title,html:'<div>'+msg+'</div>',okText:yesText||'Confirm',cancelText:'Cancel',onOk:function(){onYes();}});
 }
 
 function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
@@ -1068,53 +1114,53 @@ function exportData(){
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
   a.href=url;a.download='portfolio-backup-'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-  toast('Backup file download ho gayi');
+  toast('Backup file downloaded');
 }
 function importData(input){
   const f=input.files&&input.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
-    if(d&&(d.stocks||d.mfs||d.loans||d.bonds)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[],bonds:d.bonds||[],history:d.history||[],meta:d.meta||{}};saveState();render();toast('Backup restore ho gaya');}
-    else toast('Ye sahi backup file nahi lagti');
-  }catch(e){toast('File padhi nahi gayi');}};
+    if(d&&(d.stocks||d.mfs||d.loans||d.bonds)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[],bonds:d.bonds||[],history:d.history||[],meta:d.meta||{}};saveState();render();toast('Backup restored');}
+    else toast('This doesn’t look like a valid backup file');
+  }catch(e){toast('Couldn’t read the file');}};
   r.readAsText(f);input.value='';
 }
 
 function acctBar(){
   return '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:13px;color:var(--muted)">'
     +'<div>Logged in: <b style="color:var(--text)">'+escapeHtml(myEmail)+'</b>'+(myIsAdmin?' <span class="ver" style="border-color:var(--gain);color:var(--gain)">ADMIN</span>':'')+'</div>'
-    +'<div>'+(viewingUserId&&viewingUserId!==myId?'<span style="color:var(--brass)">Dekh rahe ho: '+escapeHtml(viewingEmail)+'</span> <span class="cancel-link" onclick="backToMine()">← mera account</span> &nbsp;·&nbsp; ':'')+'<span class="cancel-link" onclick="doLogout()">Logout</span></div></div>';
+    +'<div>'+(viewingUserId&&viewingUserId!==myId?'<span style="color:var(--brass)">Viewing: '+escapeHtml(viewingEmail)+'</span> <span class="cancel-link" onclick="backToMine()">← my account</span> &nbsp;·&nbsp; ':'')+'<span class="cancel-link" onclick="doLogout()">Logout</span></div></div>';
 }
 
 function renderAuth(){
   const ha=document.getElementById('hdrActions');if(ha)ha.style.display='none';
   document.getElementById('app').innerHTML=
     '<div class="add-box" style="max-width:440px;margin:24px auto">'
-    +'<h3>Welcome — Login ya naya account</h3>'
-    +'<div class="fld" style="margin-bottom:10px"><label>Full Name</label><input id="au-name" placeholder="Poora naam" style="width:100%"></div>'
+    +'<h3>Welcome — log in or create an account</h3>'
+    +'<div class="fld" style="margin-bottom:10px"><label>Full Name</label><input id="au-name" placeholder="Full name" style="width:100%"></div>'
     +'<div class="fld" style="margin-bottom:10px"><label>Mobile Number</label><input id="au-phone" placeholder="9812345678" style="width:100%"></div>'
     +'<div class="fld" style="margin-bottom:10px"><label>Email</label><input id="au-email" type="email" placeholder="you@email.com" style="width:100%"></div>'
-    +'<div class="fld" style="margin-bottom:14px"><label>Password</label><input id="au-pass" type="password" placeholder="6+ akshar" style="width:100%"></div>'
-    +'<div style="display:flex;gap:8px"><button class="add-btn" onclick="doSignup()">Naya account banao</button><button class="sec-btn" onclick="doLogin()">Login</button></div>'
-    +'<div class="note" style="margin-top:10px"><span class="cancel-link" onclick="doForgot()">Password bhool gaye?</span> — email par reset link aayega.</div>'
-    +'<div class="note">Naya account: Name, Mobile, Email, Password bharein. Login: sirf Email + Password. <span class="cancel-link" onclick="renderLanding()">← Home</span></div></div>'+footer();
+    +'<div class="fld" style="margin-bottom:14px"><label>Password</label><input id="au-pass" type="password" placeholder="6+ characters" style="width:100%"></div>'
+    +'<div style="display:flex;gap:8px"><button class="add-btn" onclick="doSignup()">Create account</button><button class="sec-btn" onclick="doLogin()">Login</button></div>'
+    +'<div class="note" style="margin-top:10px"><span class="cancel-link" onclick="doForgot()">Forgot password?</span> — we’ll email you a reset link.</div>'
+    +'<div class="note">New account: fill Name, Mobile, Email, Password. Log in: just Email + Password. <span class="cancel-link" onclick="renderLanding()">← Home</span></div></div>'+footer();
 }
 async function doSignup(){
   const name=(document.getElementById('au-name').value||'').trim();
   const phone=(document.getElementById('au-phone').value||'').trim();
   const email=(document.getElementById('au-email').value||'').trim();
   const password=document.getElementById('au-pass').value;
-  if(!name||!phone){toast('Full Name aur Mobile Number bharein');return;}
-  if(!email||password.length<6){toast('Email aur 6+ akshar ka password daalein');return;}
+  if(!name||!phone){toast('Please enter Full Name and Mobile Number');return;}
+  if(!email||password.length<6){toast('Enter a valid email and a 6+ character password');return;}
   var ref=new URLSearchParams(location.search).get('ref');
   const {error}=await sb.auth.signUp({email:email,password:password,options:{data:{name:name,phone:phone,ref:ref||undefined}}});
   if(error){toast(error.message);return;}
-  sendMail(email,'Welcome to Portfolio Bahi-Khata','<p>Namaste '+escapeHtml(name)+',</p><p>Aapka account ban gaya 🎉 Aapko 7-din free Premium trial mila hai. Login karke apne investments track karna shuru karein.</p>');
-  toast('Account ban gaya! Ab Login dabayein.');
+  sendMail(email,'Welcome to Portfolio Bahi-Khata','<p>Hi '+escapeHtml(name)+',</p><p>Your account is ready 🎉 You’ve got a 7-day free Premium trial. Log in and start tracking your investments.</p>');
+  toast('Account created! Now tap Login.');
 }
 async function doLogin(){
   const email=document.getElementById('au-email').value.trim(),password=document.getElementById('au-pass').value;
-  if(!email||!password){toast('Email aur password daalein');return;}
+  if(!email||!password){toast('Enter email and password');return;}
   const {data,error}=await sb.auth.signInWithPassword({email,password});
   if(error){toast(error.message);return;}
   await afterLogin(data.session);
@@ -1123,22 +1169,22 @@ async function doLogout(){await sb.auth.signOut();myId=null;viewingUserId=null;s
 
 async function doForgot(){
   const email=document.getElementById('au-email').value.trim();
-  if(!email){toast('Pehle upar apna email daalein, phir ye dabayein');return;}
+  if(!email){toast('Enter your email above first, then tap this');return;}
   const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
   if(error){toast(error.message);return;}
-  toast('Reset link email par bhej diya — email kholkar link par click karein.');
+  toast('Reset link sent — open your email and click the link.');
 }
 function renderResetPassword(){
   const ha=document.getElementById('hdrActions');if(ha)ha.style.display='none';
-  document.getElementById('app').innerHTML='<div class="add-box" style="max-width:440px;margin:24px auto"><h3>Naya password banayein</h3>'
-    +'<div class="fld" style="margin-bottom:14px"><label>Naya Password</label><input id="rp-pass" type="password" placeholder="6+ akshar" style="width:100%"></div>'
-    +'<button class="add-btn" onclick="doResetPassword()">Save karein</button></div>';
+  document.getElementById('app').innerHTML='<div class="add-box" style="max-width:440px;margin:24px auto"><h3>Set a new password</h3>'
+    +'<div class="fld" style="margin-bottom:14px"><label>New Password</label><input id="rp-pass" type="password" placeholder="6+ characters" style="width:100%"></div>'
+    +'<button class="add-btn" onclick="doResetPassword()">Save</button></div>';
 }
 async function doResetPassword(){
-  const p=document.getElementById('rp-pass').value;if(p.length<6){toast('6+ akshar ka password daalein');return;}
+  const p=document.getElementById('rp-pass').value;if(p.length<6){toast('Enter a password with 6+ characters');return;}
   const {error}=await sb.auth.updateUser({password:p});
   if(error){toast(error.message);return;}
-  toast('Password badal gaya!');
+  toast('Password updated!');
   const {data:{session}}=await sb.auth.getSession();
   if(session)await afterLogin(session);else renderAuth();
 }
@@ -1162,21 +1208,21 @@ function permBadges(u){
 function renderAdmin(){
   if(adminPermUser){
     var u=adminUsers.find(function(x){return x.id===adminPermUser;});
-    if(!u)return '<div class="empty">User nahi mila.</div>';
-    return '<div class="add-box"><h3>Access — '+escapeHtml(u.email)+' <span class="cancel-link" onclick="adminPermUser=null;render()">← list par wapas</span></h3>'
-      +permToggle('Support — chat dekhe aur reply kare','can_support',u.can_support,u.id)
-      +permToggle('Accounts — sabke portfolio dekhe/badle','can_accounts',u.can_accounts,u.id)
-      +permToggle('Settings — support number aur announcement badle','can_settings',u.can_settings,u.id)
-      +permToggle('SUPER ADMIN — sab kuch + doosre admins ko access de','is_super',u.is_super,u.id)
-      +'<div class="note">Toggle karte hi turant lagu ho jata hai. User ko dobara login karne par naya access milega.</div></div>';
+    if(!u)return '<div class="empty">User not found.</div>';
+    return '<div class="add-box"><h3>Access — '+escapeHtml(u.email)+' <span class="cancel-link" onclick="adminPermUser=null;render()">← back to list</span></h3>'
+      +permToggle('Support — view and reply to chats','can_support',u.can_support,u.id)
+      +permToggle('Accounts — view/edit all portfolios','can_accounts',u.can_accounts,u.id)
+      +permToggle('Settings — change support number and announcement','can_settings',u.can_settings,u.id)
+      +permToggle('SUPER ADMIN — everything + grant access to other admins','is_super',u.is_super,u.id)
+      +'<div class="note">Changes apply instantly. The user gets the new access after logging in again.</div></div>';
   }
-  if(!adminUsers.length)return '<div class="empty">Users load ho rahe hain… (ya abhi koi user nahi)</div>';
+  if(!adminUsers.length)return '<div class="empty">Loading users… (or no users yet)</div>';
   var reqBox='';
   if(premiumReqs&&premiumReqs.length){
     var umap={};adminUsers.forEach(function(u){umap[u.id]=u;});
     reqBox='<div class="add-box"><h3>💳 Payment requests ('+premiumReqs.length+')</h3><table class="tbl"><thead><tr><th>User</th><th>UTR</th><th></th></tr></thead><tbody>'
       +premiumReqs.map(function(p){var u=umap[p.user_id];return '<tr><td><span class="name">'+escapeHtml(u?(u.name||u.email):p.user_id)+'</span><span class="tag">'+(u&&u.phone?'📱 '+escapeHtml(u.phone)+' · ':'')+'₹'+escapeHtml(p.amount||'')+'</span></td><td class="num">'+escapeHtml(p.utr||'')+'</td><td><button class="edit" onclick="approvePayment(\''+p.id+'\',\''+p.user_id+'\')">✅ Approve</button><button class="del" onclick="rejectPayment(\''+p.id+'\')">✕</button></td></tr>';}).join('')
-      +'</tbody></table><div class="note">Approve karne par user ko 30 din premium mil jayega. (Sirf super admin de sakta hai.)</div></div>';
+      +'</tbody></table><div class="note">Approving grants the user 30 days of premium. (Only super admin can grant.)</div></div>';
   }
   var rows=adminUsers.map(function(u){
     var prem=u.is_premium||(u.premium_until&&new Date(u.premium_until)>new Date());
@@ -1186,15 +1232,15 @@ function renderAdmin(){
     +'<td class="num '+plClass(u.tot.net)+'">'+plSign(u.tot.net)+inr(u.tot.net)+'</td>'
     +'<td><button class="edit" onclick="openUser(\''+u.id+'\',\''+escapeHtml(u.email||'')+'\')">Open</button>'
     +(mySuper?'<button class="edit" onclick="adminPermUser=\''+u.id+'\';render()">Access</button><button class="edit" onclick="grantDays(\''+u.id+'\',30)">+30d ⭐</button>':'')+'</td></tr>';}).join('');
-  return reqBox+'<div class="add-box"><h3>Sabhi users <button class="sec-btn" style="float:right" onclick="exportAllUsers()">⬇ Sabka data export</button></h3><table class="tbl"><thead><tr><th>User</th><th>Net Worth</th><th>P/L</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
-    +'<div class="note">"Open" se portfolio, '+(mySuper?'"Access" se admin-rights, "+30d ⭐" se premium.':'')+' Upar "← mera account" se wapas.</div></div>';
+  return reqBox+'<div class="add-box"><h3>All users <button class="sec-btn" style="float:right" onclick="exportAllUsers()">⬇ Export all data</button></h3><table class="tbl"><thead><tr><th>User</th><th>Net Worth</th><th>P/L</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="note">"Open" for portfolio, '+(mySuper?'"Access" for admin rights, "+30d ⭐" for premium.':'')+' Use "← my account" above to go back.</div></div>';
 }
 async function setPerm(uid,field,val){
   var patch={};patch[field]=val;
   var r=await sb.from('profiles').update(patch).eq('id',uid);
   if(r.error){toast(r.error.message);return;}
   var u=adminUsers.find(function(x){return x.id===uid;});if(u)u[field]=val;
-  render();toast('Access update ho gaya');
+  render();toast('Access updated');
 }
 function permToggle(label,field,val,uid){
   return '<label style="display:flex;gap:10px;align-items:center;margin:10px 0;font-size:13px;cursor:pointer"><input type="checkbox" '+(val?'checked':'')+' onchange="setPerm(\''+uid+'\',\''+field+'\',this.checked)" style="width:16px;height:16px"> '+label+'</label>';
@@ -1225,7 +1271,7 @@ async function afterLogin(session){
   activeTab='graph';render();
 }
 async function initApp(){
-  if(!SUPABASE_URL||!SUPABASE_ANON_KEY||SUPABASE_URL.indexOf('YAHAN')>-1||SUPABASE_ANON_KEY.indexOf('YAHAN')>-1){document.getElementById('app').innerHTML='<div class="add-box" style="max-width:520px;margin:24px auto"><h3>Ek chhota setup baaki hai</h3><div class="note">config.js file me apni SUPABASE_URL aur PUBLISHABLE KEY daalein (README dekhein), phir dobara deploy karein.</div></div>';return;}
+  if(!SUPABASE_URL||!SUPABASE_ANON_KEY||SUPABASE_URL.indexOf('YAHAN')>-1||SUPABASE_ANON_KEY.indexOf('YAHAN')>-1){document.getElementById('app').innerHTML='<div class="add-box" style="max-width:520px;margin:24px auto"><h3>One quick setup left</h3><div class="note">Add your SUPABASE_URL and PUBLISHABLE KEY in config.js (see README), then redeploy.</div></div>';return;}
   sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   var pg=new URLSearchParams(location.search).get('page');
   if(pg&&['terms','privacy','refund','disclaimer'].indexOf(pg)>-1){
@@ -1244,35 +1290,35 @@ function renderLanding(){
     '<div style="max-width:820px;margin:0 auto">'
     +'<div style="text-align:center;padding:30px 16px 10px">'
     +'<div style="font-size:44px">📊</div>'
-    +'<h2 style="font-size:26px;margin:8px 0">Apne saare investments, ek jagah</h2>'
-    +'<div class="note" style="font-size:14px;max-width:520px;margin:0 auto">Stocks, Mutual Funds, Bonds aur Loans — live price, sahi profit/loss, XIRR aur reports. Simple, Hindi me.</div>'
-    +'<div style="margin-top:18px"><button class="add-btn" onclick="renderAuth()">Free me shuru karo</button></div>'
+    +'<h2 style="font-size:26px;margin:8px 0">All your investments, in one place</h2>'
+    +'<div class="note" style="font-size:14px;max-width:520px;margin:0 auto">Stocks, mutual funds, bonds and loans — live prices, accurate profit/loss, XIRR and reports. Simple and clear.</div>'
+    +'<div style="margin-top:18px"><button class="add-btn" onclick="renderAuth()">Get started free</button></div>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:20px">'
-    +landCard('📈','Live tracking','Stocks & MF ke live daam, auto-refresh market hours me.')
-    +landCard('🧮','Sahi return','Absolute + XIRR (time ko dekhte hue asli salaana return).')
-    +landCard('📊','Graph & report','Allocation, trend, aur ek-click PDF report.')
-    +landCard('🔔','Price alerts','Bhaav target par pahunche to turant pata chale.')
-    +landCard('🏆','Leaderboard','Apna % return doosron se compare karo (opt-in).')
-    +landCard('🔒','Surakshit cloud','Har user ka apna private data, kahin bhi login.')
+    +landCard('📈','Live tracking','Live prices for stocks & funds, auto-refreshed during market hours.')
+    +landCard('🧮','Real returns','Absolute + XIRR (true annualised return over time).')
+    +landCard('📊','Charts & reports','Allocation, trends, and one-click PDF reports.')
+    +landCard('🔔','Price alerts','Know instantly when a price hits your target.')
+    +landCard('🏆','Leaderboard','Compare your % return with others (opt-in).')
+    +landCard('🔒','Secure cloud','Each user’s data is private; log in from anywhere.')
     +'</div>'
-    +'<div class="add-box" style="margin-top:20px;text-align:center"><h3>Premium '+(price?'— sirf ₹'+escapeHtml(price):'')+'</h3><div class="note">7-din free trial. PDF report, price alerts, aur unlimited features. Kabhi bhi cancel.</div><div style="margin-top:12px"><button class="add-btn" onclick="renderAuth()">Account banao</button></div></div>'
+    +'<div class="add-box" style="margin-top:20px;text-align:center"><h3>Premium '+(price?'— just ₹'+escapeHtml(price):'')+'</h3><div class="note">7-day free trial. PDF reports, price alerts, and unlimited features. Cancel anytime.</div><div style="margin-top:12px"><button class="add-btn" onclick="renderAuth()">Create account</button></div></div>'
     +'</div>'+footer();
 }
 function landCard(e,t,d){return '<div class="add-box" style="margin:0"><div style="font-size:24px">'+e+'</div><h3 style="margin:6px 0 4px">'+t+'</h3><div class="note">'+d+'</div></div>';}
 
 function footer(){
   return '<div style="max-width:1000px;margin:26px auto 0;padding-top:14px;border-top:1px solid var(--line);text-align:center;font-size:11px;color:var(--muted);line-height:1.8">'
-    +'⚠️ Ye app sirf personal portfolio tracking ke liye hai — koi investment advice, tips ya recommendation nahi. Nivesh apne vivek/salahkar se karein.<br>'
+    +'⚠️ This app is for personal portfolio tracking only — not investment advice, tips, or recommendations. Invest using your own judgement/advisor.<br>'
     +'<span class="cancel-link" onclick="showLegal(\'terms\')">Terms of Service</span> · <span class="cancel-link" onclick="showLegal(\'privacy\')">Privacy Policy</span> · <span class="cancel-link" onclick="showLegal(\'refund\')">Refund Policy</span> · <span class="cancel-link" onclick="showLegal(\'disclaimer\')">Disclaimer</span></div>';
 }
 function showLegal(which){legalView=which;renderLegalPage();window.scrollTo(0,0);}
 function closeLegal(){legalView=null;if(myId)render();else renderLanding();window.scrollTo(0,0);}
 function renderLegalPage(){
-  document.getElementById('app').innerHTML='<div class="add-box" style="max-width:820px;margin:20px auto">'+legalContent(legalView)+'<div style="margin-top:18px"><span class="cancel-link" onclick="closeLegal()">← Wapas</span></div></div>'+footer();
+  document.getElementById('app').innerHTML='<div class="add-box" style="max-width:820px;margin:20px auto">'+legalContent(legalView)+'<div style="margin-top:18px"><span class="cancel-link" onclick="closeLegal()">← Back</span></div></div>'+footer();
 }
 function legalContent(which){
-  var co=(appSettings.company_name||'[Company / Owner ka naam]');
+  var co=(appSettings.company_name||'[Company / Owner name]');
   var em=(appSettings.contact_email||'[support email]');
   var ad=(appSettings.contact_address||'[address]');
   var today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
@@ -1280,29 +1326,29 @@ function legalContent(which){
   var h=function(t){return '<h3 style="margin:16px 0 4px">'+t+'</h3>';};
   var head='<div class="note">Last updated: '+today+' · '+escapeHtml(co)+'</div>';
   if(which==='terms')return '<h2>Terms of Service</h2>'+head
-    +h('1. Sewa')+p(escapeHtml(co)+' ("hum") ye app ek <b>personal investment portfolio tracking tool</b> ke roop me deti hai. Ye koi broker, advisor, ya financial institution nahi hai.')
-    +h('2. Koi investment advice nahi')+p('App me di gayi jaankari, graph, leaderboard, ya "news/tips" <b>sirf soochna ke liye</b> hain — ye investment/tax/legal advice nahi hain. Har nivesh ka faisla aap apne vivek aur registered salahkar se karein.')
-    +h('3. Data aapke daale hue')+p('Portfolio ke aankde aap khud daalte hain. Live prices tisri-party (public) source se aate hain aur inme deri/galti ho sakti hai; hum inki shudhता ki guarantee nahi dete.')
-    +h('4. Account')+p('Aap apne login ki suraksha ke zimmedaar hain. Galat istemaal par hum account rok sakte hain.')
-    +h('5. Premium')+p('Premium ek paid subscription hai. Payment, renewal aur refund "Refund Policy" ke anusaar honge.')
-    +h('6. Zimmedari ki seema')+p('Kisi bhi nivesh-nuksaan, data-hani, ya sewa-band hone ke liye hum zimmedar nahi hain, kanoon ki adhiktam seema tak.')
-    +h('7. Sampark')+p('Sawaal: '+escapeHtml(em)+' · '+escapeHtml(ad));
+    +h('1. Service')+p(escapeHtml(co)+' ("we") provides this app as a <b>personal investment portfolio tracking tool</b>. We are not a broker, advisor, or financial institution.')
+    +h('2. Not investment advice')+p('Any information, charts, leaderboard, or "news/tips" in the app are <b>for information only</b> — they are not investment/tax/legal advice. Make every investment decision using your own judgement and a registered advisor.')
+    +h('3. Your data')+p('You enter your portfolio data yourself. Live prices come from third-party (public) sources and may be delayed or inaccurate; we do not guarantee their accuracy.')
+    +h('4. Account')+p('You are responsible for the security of your login. We may suspend accounts for misuse.')
+    +h('5. Premium')+p('Premium is a paid subscription. Payment, renewal and refunds are governed by the "Refund Policy".')
+    +h('6. Limitation of liability')+p('We are not liable for any investment loss, data loss, or service interruption, to the maximum extent permitted by law.')
+    +h('7. Contact')+p('Questions: '+escapeHtml(em)+' · '+escapeHtml(ad));
   if(which==='privacy')return '<h2>Privacy Policy</h2>'+head
-    +h('1. Kya data lete hain')+p('Naam, mobile number, email (account ke liye), aur aapke daale hue portfolio aankde. Payment ke liye reference/UTR ya payment-gateway ki jaankari.')
-    +h('2. Kaise istemaal')+p('Sirf aapko sewa dene ke liye — login, portfolio dikhana, support, aur (opt-in par) leaderboard me sirf aapka % return + naam. Rupaye kabhi public nahi hote.')
-    +h('3. Kaha rakha jata hai')+p('Data surakshit cloud (Supabase) par, encryption-at-rest ke saath. Sirf aap (aur zaroorat par authorized admin) aapka data dekh sakte hain.')
-    +h('4. Tisri party')+p('Live price ke liye public data sources, aur payment ke liye payment-gateway. Hum aapka data bechte nahi.')
-    +h('5. Aapke adhikar')+p('Aap apna data dekh, download (Backup), ya delete karne ka anurodh kar sakte hain: '+escapeHtml(em)+'.')
-    +h('6. Sampark')+p(escapeHtml(co)+' · '+escapeHtml(em)+' · '+escapeHtml(ad));
+    +h('1. What we collect')+p('Name, mobile number, email (for your account), and the portfolio data you enter. For payments, the reference/UTR or payment-gateway information.')
+    +h('2. How we use it')+p('Only to provide the service — login, showing your portfolio, support, and (if you opt in) only your % return + name on the leaderboard. Rupee amounts are never made public.')
+    +h('3. Where it is stored')+p('Data is stored on a secure cloud (Supabase) with encryption at rest. Only you (and, when necessary, an authorized admin) can see your data.')
+    +h('4. Third parties')+p('Public data sources for live prices, and a payment gateway for payments. We do not sell your data.')
+    +h('5. Your rights')+p('You can view, download (Backup), or request deletion of your data: '+escapeHtml(em)+'.')
+    +h('6. Contact')+p(escapeHtml(co)+' · '+escapeHtml(em)+' · '+escapeHtml(ad));
   if(which==='refund')return '<h2>Refund & Cancellation Policy</h2>'+head
-    +h('1. Subscription')+p('Premium ek subscription hai jise aap kabhi bhi cancel kar sakte hain; cancel karne par agli renewal nahi hogi, par chalu avadhi chalti rahegi.')
-    +h('2. Refund')+p('Digital sewa hone ke kaaran, chukaya gaya subscription aam taur par non-refundable hai. Agar galti se do baar charge hua ho ya technical dikkat ho, to '+escapeHtml(em)+' par 7 din ke andar sampark karein — uchit maamlo me refund/adjust kiya jayega.')
-    +h('3. Kaise cancel karein')+p('App me apne account se, ya '+escapeHtml(em)+' par likhkar.')
-    +h('4. Sampark')+p(escapeHtml(co)+' · '+escapeHtml(em));
+    +h('1. Subscription')+p('Premium is a subscription you can cancel anytime; cancelling stops the next renewal, but your current period continues.')
+    +h('2. Refund')+p('As a digital service, a paid subscription is generally non-refundable. If you were charged twice by mistake or face a technical issue, '+escapeHtml(em)+' contact us within 7 days — in genuine cases we will refund/adjust.')
+    +h('3. How to cancel')+p('From your account in the app, or '+escapeHtml(em)+' by writing to us.')
+    +h('4. Contact')+p(escapeHtml(co)+' · '+escapeHtml(em));
   return '<h2>Disclaimer</h2>'+head
-    +p('Ye app '+escapeHtml(co)+' dwara ek <b>personal tracking tool</b> ke roop me di jati hai. Ismein di gayi koi bhi jaankari, aankda, chart, leaderboard ya "tips" ko <b>investment, tax ya legal salah na samjhein</b>.')
-    +p('Share/MF/bond ke daam tisri-party public sources se aate hain aur inme deri ya truti ho sakti hai. Nivesh me risk hota hai; pichhla pradarshan bhavishya ki guarantee nahi. Koi bhi faisla lene se pehle SEBI-registered salahkar se salah lein.')
-    +p('Sampark: '+escapeHtml(em));
+    +p('Ye app '+escapeHtml(co)+' as a <b>personal tracking tool</b>. Do not treat any information, data, chart, leaderboard, or "tips" in it as <b>investment, tax, or legal advice</b>.')
+    +p('Stock/MF/bond prices come from third-party public sources and may be delayed or contain errors. Investing involves risk; past performance does not guarantee future results. Consult a SEBI-registered advisor before making any decision.')
+    +p('Contact: '+escapeHtml(em));
 }
 if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
 if(window.SENTRY_DSN){var ss=document.createElement('script');ss.src='https://browser.sentry-cdn.com/7.114.0/bundle.min.js';ss.crossOrigin='anonymous';ss.onload=function(){try{Sentry.init({dsn:window.SENTRY_DSN});}catch(e){}};document.head.appendChild(ss);}
