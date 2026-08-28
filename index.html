@@ -74,10 +74,11 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v9</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v10</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
+      <label class="sec-btn" style="cursor:pointer"><input type="checkbox" id="autoChk" onchange="toggleAuto(this)" style="margin-right:6px;vertical-align:middle">Auto</label>
       <button class="sec-btn" onclick="exportData()">⬇ Backup</button>
       <label class="sec-btn" style="cursor:pointer">⬆ Restore<input type="file" accept="application/json" style="display:none" onchange="importData(this)"></label>
       <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">↻ Live Rates Update</button>
@@ -95,8 +96,8 @@
    2) Publishable key   niche doosri line me
    (single quotes '...' aur ; waise hi rehne dein)
    ===================================================================== */
-const SUPABASE_URL     = 'https://htjufhjupdfytdxitolg.supabase.co';       // jaise: https://xxxx.supabase.co
-const SUPABASE_ANON_KEY = 'sb_publishable_KXFWdO9eM-u24jCVzyFgQA_-3ZgzedH';  // jaise: sb_publishable_xxxxx
+const SUPABASE_URL     = 'YAHAN_PROJECT_URL_DAALO';       // jaise: https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = 'YAHAN_PUBLISHABLE_KEY_DAALO';  // jaise: sb_publishable_xxxxx
 /* ===================================================================== */
 
 let sb=null;
@@ -190,10 +191,10 @@ async function refreshAll(){
 function computeTotals(st){
   st=st||{};
   let sInv=0,sCur=0,mInv=0,mCur=0,lPrin=0,lInt=0,bInv=0,bCur=0;
-  (st.stocks||[]).forEach(s=>{sInv+=s.qty*s.buyPrice;sCur+=s.qty*(s.currentPrice||s.buyPrice);});
-  (st.mfs||[]).forEach(m=>{mInv+=m.units*m.buyNav;mCur+=m.units*(m.currentNav||m.buyNav);});
-  (st.loans||[]).forEach(l=>{const c=loanInterest(l);lPrin+=(+l.principal||0);lInt+=c.interest;});
-  (st.bonds||[]).forEach(b=>{const c=bondCalc(b);bInv+=c.invested;bCur+=c.current;});
+  (st.stocks||[]).filter(x=>!x.exclude).forEach(s=>{sInv+=s.qty*s.buyPrice;sCur+=s.qty*(s.currentPrice||s.buyPrice);});
+  (st.mfs||[]).filter(x=>!x.exclude).forEach(m=>{mInv+=m.units*m.buyNav;mCur+=m.units*(m.currentNav||m.buyNav);});
+  (st.loans||[]).filter(x=>!x.exclude).forEach(l=>{const c=loanInterest(l);lPrin+=(+l.principal||0);lInt+=c.interest;});
+  (st.bonds||[]).filter(x=>!x.exclude).forEach(b=>{const c=bondCalc(b);bInv+=c.invested;bCur+=c.current;});
   const invested=sInv+mInv+lPrin+bInv,current=sCur+mCur+lPrin+lInt+bCur;
   return {sInv,sCur,mInv,mCur,lPrin,lInt,bInv,bCur,bGain:bCur-bInv,invested,current,net:current-invested,stockPL:sCur-sInv,mfPL:mCur-mInv};
 }
@@ -212,7 +213,8 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+(myIsAdmin?tabBtn('admin','👥 Accounts'):'')+'</div>'
+    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+(myIsAdmin?tabBtn('admin','👥 Accounts'):'')+'</div>'
+    +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
     +'<div class="panel '+(activeTab==='bonds'?'active':'')+'">'+renderBonds()+'</div>'
@@ -221,6 +223,8 @@ function render(){
 }
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
 function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;if(id==='admin'){loadAdminUsers();}else{render();}}
+function exBtn(kind,it){return '<button class="edit" title="Portfolio total me gino / na gino" onclick="toggleExclude(\''+kind+'\',\''+it.id+'\')" style="'+(it.exclude?'border-color:var(--loss);color:var(--loss)':'border-color:var(--brass-dim);color:var(--brass)')+'">'+(it.exclude?'⊘':'∑')+'</button>';}
+function toggleExclude(kind,id){const it=(state[kind]||[]).find(x=>x.id===id);if(it){it.exclude=!it.exclude;saveState();render();}}
 
 /* ---------- STOCKS ---------- */
 function renderStocks(){
@@ -231,7 +235,7 @@ function renderStocks(){
       +'<td class="num"><input class="price-in num" type="number" step="0.01" value="'+(s.currentPrice||s.buyPrice)+'" onchange="setStockPrice(\''+s.id+'\',this.value)"></td>'
       +'<td class="num">'+inr(inv)+'</td><td class="num">'+inr(cur)+'</td>'
       +'<td class="num '+plClass(pl)+'">'+plSign(pl)+inr(pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
-      +'<td><button class="edit" onclick="startEditStock(\''+s.id+'\')">✎</button><button class="del" onclick="delItem(\'stocks\',\''+s.id+'\')">✕</button></td></tr>';
+      +'<td>'+exBtn('stocks',s)+'<button class="edit" onclick="startEditStock(\''+s.id+'\')">✎</button><button class="del" onclick="delItem(\'stocks\',\''+s.id+'\')">✕</button></td></tr>';
   }).join('');
   const e=editStock?state.stocks.find(x=>x.id===editStock):null;
   return '<table class="tbl"><thead><tr><th>Stock</th><th>Buy Price</th><th>Current</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>'
@@ -301,7 +305,7 @@ function renderMfs(){
       +'<td class="num"><input class="price-in num" type="number" step="0.01" value="'+(m.currentNav||m.buyNav)+'" onchange="setMfNav(\''+m.id+'\',this.value)"></td>'
       +'<td class="num">'+inr(inv)+'</td><td class="num">'+inr(cur)+'</td>'
       +'<td class="num '+plClass(pl)+'">'+plSign(pl)+inr(pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
-      +'<td><button class="edit" onclick="startEditMf(\''+m.id+'\')">✎</button><button class="del" onclick="delItem(\'mfs\',\''+m.id+'\')">✕</button></td></tr>';
+      +'<td>'+exBtn('mfs',m)+'<button class="edit" onclick="startEditMf(\''+m.id+'\')">✎</button><button class="del" onclick="delItem(\'mfs\',\''+m.id+'\')">✕</button></td></tr>';
   }).join('');
   const e=editMf?state.mfs.find(x=>x.id===editMf):null;
   return '<table class="tbl"><thead><tr><th>Fund</th><th>Buy NAV</th><th>Current NAV</th><th>Invested</th><th>Value</th><th>P/L</th><th></th></tr></thead>'
@@ -355,12 +359,12 @@ function renderLoans(){
     if(c.mode==='fixed'){
       return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+inr(c.monthly)+'/mahina × '+c.months+' · '+c.elapsed+'/'+c.months+' mahine mila · principal wapas '+inr(l.principal)+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
         +'<td class="num">'+inr(l.principal)+'</td><td class="num gain">'+inr(c.interest)+'</td><td class="num">'+inr(l.principal+c.totalInterest)+'</td>'
-        +'<td><button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
+        +'<td>'+exBtn('loans',l)+'<button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
     }
     const tl=l.type==='simple'?'Simple':(l.type==='monthly'?'Monthly comp.':l.type==='quarterly'?'Quarterly comp.':'Yearly comp.');
     return '<tr><td><span class="name">'+escapeHtml(l.borrower)+'</span><span class="tag">'+l.rate+'% p.a. · '+tl+' · '+c.days+' din'+(l.note?' · '+escapeHtml(l.note):'')+'</span></td>'
       +'<td class="num">'+inr(l.principal)+'</td><td class="num gain">'+inr(c.interest)+'</td><td class="num">'+inr(c.total)+'</td>'
-      +'<td><button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
+      +'<td>'+exBtn('loans',l)+'<button class="edit" onclick="startEditLoan(\''+l.id+'\')">✎</button><button class="del" onclick="delItem(\'loans\',\''+l.id+'\')">✕</button></td></tr>';
   }).join('');
   const e=editLoan?state.loans.find(x=>x.id===editLoan):null;
   const isFixed=loanMode==='fixed',isComp=loanMode==='compound';
@@ -421,21 +425,21 @@ function renderBonds(){
         +'<td class="num">'+inr(c.invested)+'</td>'
         +'<td class="num"><input class="price-in num" type="number" step="0.01" value="'+(b.currentValue!=null&&b.currentValue!==''?b.currentValue:c.invested)+'" onchange="setBondValue(\''+b.id+'\',this.value)"></td>'
         +'<td class="num '+plClass(c.pl)+'">'+plSign(c.pl)+inr(c.pl)+'<br><span style="font-size:11px">'+plSign(pct)+pct.toFixed(1)+'%</span></td>'
-        +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
+        +'<td>'+exBtn('bonds',b)+'<button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
     }
     if(c.btype==='fixedpay'){
       const totCol=c.totalInterest!=null?inr(b.amount+c.totalInterest):'—';
       const term=c.months?(c.elapsed+'/'+c.months+' mahine'):(c.elapsed+' mahine');
       return '<tr><td><span class="name">'+escapeHtml(b.name)+'</span><span class="tag">'+inr(c.monthly)+'/mahina · '+term+' mila · principal wapas '+inr(b.amount)+(b.note?' · '+escapeHtml(b.note):'')+'</span></td>'
         +'<td class="num">'+inr(c.invested)+'</td><td class="num gain">'+inr(c.interestToDate)+'</td><td class="num">'+totCol+'</td>'
-        +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
+        +'<td>'+exBtn('bonds',b)+'<button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
     }
     const fl=b.freq==='cumulative'?'Cumulative':(b.freq==='monthly'?'Monthly':b.freq==='quarterly'?'Quarterly':b.freq==='halfyearly'?'Half-yearly':'Yearly');
     const mat=b.maturityDate?' · maturity '+b.maturityDate:'';
     const totCol=c.totalInterest!=null?inr(b.amount+c.totalInterest):'—';
     return '<tr><td><span class="name">'+escapeHtml(b.name)+'</span><span class="tag">'+b.rate+'% · '+fl+mat+(b.note?' · '+escapeHtml(b.note):'')+'</span></td>'
       +'<td class="num">'+inr(c.invested)+'</td><td class="num gain">'+inr(c.interestToDate)+'</td><td class="num">'+totCol+'</td>'
-      +'<td><button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
+      +'<td>'+exBtn('bonds',b)+'<button class="edit" onclick="startEditBond(\''+b.id+'\')">✎</button><button class="del" onclick="delItem(\'bonds\',\''+b.id+'\')">✕</button></td></tr>';
   }).join('');
   const e=editBond?state.bonds.find(x=>x.id===editBond):null;
   const isTrade=bondMode==='trade', isPay=bondMode==='fixedpay';
@@ -497,6 +501,73 @@ function saveBond(){
 }
 function setBondValue(id,v){const b=state.bonds.find(x=>x.id===id);if(b){b.currentValue=(v===''?null:+v);saveState();render();}}
 
+/* ---------- GRAPH ---------- */
+function polar(cx,cy,r,ang){const a=(ang-90)*Math.PI/180;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+function arcPath(cx,cy,r,r2,a0,a1){
+  const p0=polar(cx,cy,r,a1),p1=polar(cx,cy,r,a0),p2=polar(cx,cy,r2,a0),p3=polar(cx,cy,r2,a1);
+  const large=(a1-a0)>180?1:0;
+  return 'M'+p0[0]+' '+p0[1]+' A'+r+' '+r+' 0 '+large+' 0 '+p1[0]+' '+p1[1]+' L'+p2[0]+' '+p2[1]+' A'+r2+' '+r2+' 0 '+large+' 1 '+p3[0]+' '+p3[1]+' Z';
+}
+function svgDonut(segs){
+  const total=segs.reduce((a,s)=>a+s.value,0);
+  if(total<=0)return '<div class="empty">Abhi koi value nahi — pehle holdings add karein.</div>';
+  let ang=0,paths='';
+  segs.forEach(s=>{const sweep=s.value/total*360;paths+='<path d="'+arcPath(90,90,80,48,ang,ang+sweep-0.5)+'" fill="'+s.color+'"/>';ang+=sweep;});
+  const legend=segs.map(s=>'<div style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0"><span style="width:12px;height:12px;border-radius:3px;background:'+s.color+';display:inline-block"></span>'+s.label+' — <b class="num">'+inr(s.value)+'</b> <span style="color:var(--muted)">('+(s.value/total*100).toFixed(1)+'%)</span></div>').join('');
+  return '<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap"><svg width="180" height="180" viewBox="0 0 180 180">'+paths+'<text x="90" y="86" text-anchor="middle" fill="var(--muted)" font-size="11">Total</text><text x="90" y="104" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="700">'+inr(total)+'</text></svg><div>'+legend+'</div></div>';
+}
+function svgLine(hist){
+  if(!hist||hist.length<2)return '<div class="note">Trend kal se banna shuru hoga — har din app kholne par ek point apne-aap add hota jayega.</div>';
+  const w=580,h=190,pad=34;
+  const vals=hist.map(p=>p.net);let min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);
+  if(min>0)min=0;if(max<0)max=0;if(min===max)max=min+1;
+  const xs=i=>pad+(i/(hist.length-1))*(w-2*pad);
+  const ys=v=>h-pad-((v-min)/(max-min))*(h-2*pad);
+  const line=hist.map((p,i)=>xs(i)+','+ys(p.net)).join(' ');
+  const zeroY=ys(0),last=hist[hist.length-1];
+  return '<svg width="100%" viewBox="0 0 '+w+' '+h+'" style="max-width:'+w+'px">'
+    +'<line x1="'+pad+'" y1="'+zeroY+'" x2="'+(w-pad)+'" y2="'+zeroY+'" stroke="var(--line)" stroke-dasharray="4 4"/>'
+    +'<polyline points="'+line+'" fill="none" stroke="'+(last.net>=0?'var(--gain)':'var(--loss)')+'" stroke-width="2.5"/>'
+    +'<circle cx="'+xs(hist.length-1)+'" cy="'+ys(last.net)+'" r="4" fill="'+(last.net>=0?'var(--gain)':'var(--loss)')+'"/>'
+    +'<text x="'+(w-pad)+'" y="'+(ys(last.net)-8)+'" text-anchor="end" fill="var(--text)" font-size="12" font-weight="700">'+(last.net>=0?'+':'')+inr(last.net)+'</text></svg>'
+    +'<div class="note">'+hist.length+' din ka trend · pehla: '+hist[0].d+' → aaj: '+last.d+'</div>';
+}
+function plBars(t){
+  const rows=[['Stocks',t.stockPL],['Mutual Funds',t.mfPL],['Bonds',t.bGain],['Loan Interest',t.lInt]];
+  const maxAbs=Math.max(1,Math.max.apply(null,rows.map(r=>Math.abs(r[1]))));
+  return rows.map(r=>{const w=Math.abs(r[1])/maxAbs*100,cl=r[1]>=0?'var(--gain)':'var(--loss)';
+    return '<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>'+r[0]+'</span><span class="num" style="color:'+cl+'">'+(r[1]>=0?'+':'')+inr(r[1])+'</span></div><div style="background:var(--ink);border-radius:6px;height:10px"><div style="width:'+w+'%;height:100%;background:'+cl+';border-radius:6px"></div></div></div>';}).join('');
+}
+function renderGraph(){
+  const t=totals();
+  const segs=[{label:'Stocks',value:t.sCur,color:'#C9A227'},{label:'Mutual Funds',value:t.mCur,color:'#4C8DFF'},{label:'Bonds',value:t.bCur,color:'#3DD68C'},{label:'Loans',value:t.lPrin+t.lInt,color:'#B57BE0'}].filter(s=>s.value>0);
+  return '<div class="add-box"><h3>Paisa kahan laga hai (current value)</h3>'+svgDonut(segs)+'</div>'
+    +'<div class="add-box"><h3>Net Profit / Loss — trend</h3>'+svgLine(state.history)+'</div>'
+    +'<div class="add-box"><h3>Category-wise Profit / Loss</h3>'+plBars(t)+'</div>';
+}
+function maybeSnapshot(){
+  if(!myId||viewingUserId!==myId)return;
+  state.history=state.history||[];
+  const today=new Date().toISOString().slice(0,10),t=computeTotals(state),last=state.history[state.history.length-1];
+  if(!last||last.d!==today){state.history.push({d:today,net:t.net,cur:t.current,inv:t.invested});if(state.history.length>200)state.history=state.history.slice(-200);saveState();}
+  else{last.net=t.net;last.cur=t.current;last.inv=t.invested;saveState();}
+}
+
+/* ---------- AUTO REFRESH (market hours) ---------- */
+let autoOn=(localStorage.getItem('auto-refresh')!=='off');
+function toggleAuto(el){autoOn=el.checked;localStorage.setItem('auto-refresh',autoOn?'on':'off');toast(autoOn?'Auto-refresh ON (market hours)':'Auto-refresh OFF');}
+function istNow(){const d=new Date();return new Date(d.getTime()+d.getTimezoneOffset()*60000+5.5*3600000);}
+function marketOpen(){const d=istNow();const day=d.getDay();if(day===0||day===6)return false;const m=d.getHours()*60+d.getMinutes();return m>=555&&m<=930;}
+async function autoTick(){
+  if(!autoOn||!sb||!myId||viewingUserId!==myId)return;
+  if(!(state.stocks&&state.stocks.length))return;
+  if(!marketOpen())return;
+  if(document.activeElement&&['INPUT','SELECT'].indexOf(document.activeElement.tagName)>-1)return;
+  for(const s of state.stocks){try{s.currentPrice=await fetchStockPrice(s.symbol,s.exch);s.auto=true;}catch(e){}}
+  saveState();render();
+}
+setInterval(autoTick,60000);
+
 function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
 function delItem(kind,id){state[kind]=state[kind].filter(x=>x.id!==id);saveState();render();}
 
@@ -511,7 +582,7 @@ function importData(input){
   const f=input.files&&input.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
-    if(d&&(d.stocks||d.mfs||d.loans||d.bonds)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[],bonds:d.bonds||[]};saveState();render();toast('Backup restore ho gaya');}
+    if(d&&(d.stocks||d.mfs||d.loans||d.bonds)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[],bonds:d.bonds||[],history:d.history||[]};saveState();render();toast('Backup restore ho gaya');}
     else toast('Ye sahi backup file nahi lagti');
   }catch(e){toast('File padhi nahi gayi');}};
   r.readAsText(f);input.value='';
@@ -531,6 +602,7 @@ function renderAuth(){
     +'<div class="fld" style="margin-bottom:10px"><label>Email</label><input id="au-email" type="email" placeholder="you@email.com" style="width:100%"></div>'
     +'<div class="fld" style="margin-bottom:14px"><label>Password</label><input id="au-pass" type="password" placeholder="6+ akshar" style="width:100%"></div>'
     +'<div style="display:flex;gap:8px"><button class="add-btn" onclick="doLogin()">Login</button><button class="sec-btn" onclick="doSignup()">Naya account banao</button></div>'
+    +'<div class="note" style="margin-top:10px"><span class="cancel-link" onclick="doForgot()">Password bhool gaye?</span> — email par reset link aayega.</div>'
     +'<div class="note">Naya account banane ke baad login karein. (Email verify Supabase setting par nirbhar hai.)</div></div>';
 }
 async function doSignup(){
@@ -548,6 +620,28 @@ async function doLogin(){
   await afterLogin(data.session);
 }
 async function doLogout(){await sb.auth.signOut();myId=null;viewingUserId=null;state={stocks:[],mfs:[],loans:[],bonds:[]};renderAuth();}
+
+async function doForgot(){
+  const email=document.getElementById('au-email').value.trim();
+  if(!email){toast('Pehle upar apna email daalein, phir ye dabayein');return;}
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+  if(error){toast(error.message);return;}
+  toast('Reset link email par bhej diya — email kholkar link par click karein.');
+}
+function renderResetPassword(){
+  const ha=document.getElementById('hdrActions');if(ha)ha.style.display='none';
+  document.getElementById('app').innerHTML='<div class="add-box" style="max-width:440px;margin:24px auto"><h3>Naya password banayein</h3>'
+    +'<div class="fld" style="margin-bottom:14px"><label>Naya Password</label><input id="rp-pass" type="password" placeholder="6+ akshar" style="width:100%"></div>'
+    +'<button class="add-btn" onclick="doResetPassword()">Save karein</button></div>';
+}
+async function doResetPassword(){
+  const p=document.getElementById('rp-pass').value;if(p.length<6){toast('6+ akshar ka password daalein');return;}
+  const {error}=await sb.auth.updateUser({password:p});
+  if(error){toast(error.message);return;}
+  toast('Password badal gaya!');
+  const {data:{session}}=await sb.auth.getSession();
+  if(session)await afterLogin(session);else renderAuth();
+}
 
 async function loadAdminUsers(){
   render();
@@ -580,14 +674,16 @@ async function afterLogin(session){
   try{const r=await sb.from('profiles').select('is_admin').eq('id',myId).maybeSingle();myIsAdmin=!!(r.data&&r.data.is_admin);}catch(e){myIsAdmin=false;}
   viewingUserId=myId;viewingEmail=myEmail;
   await loadPortfolio(myId);
-  activeTab='stocks';render();
+  maybeSnapshot();
+  const ac=document.getElementById('autoChk');if(ac)ac.checked=autoOn;
+  activeTab='graph';render();
 }
 async function initApp(){
   if(SUPABASE_URL.indexOf('YAHAN')>-1){document.getElementById('app').innerHTML='<div class="add-box" style="max-width:520px;margin:24px auto"><h3>Ek chhota setup baaki hai</h3><div class="note">index.html me SUPABASE_URL aur SUPABASE_ANON_KEY apni values se badlein (README me steps hain), phir dobara deploy karein.</div></div>';return;}
   sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   const {data:{session}}=await sb.auth.getSession();
   if(session){await afterLogin(session);}else{renderAuth();}
-  sb.auth.onAuthStateChange((_e,s)=>{if(s&&!myId){afterLogin(s);}if(!s&&myId){myId=null;renderAuth();}});
+  sb.auth.onAuthStateChange((ev,s)=>{if(ev==='PASSWORD_RECOVERY'){renderResetPassword();return;}if(s&&!myId){afterLogin(s);}if(!s&&myId){myId=null;renderAuth();}});
 }
 initApp();
 </script>
