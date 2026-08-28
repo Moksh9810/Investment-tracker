@@ -75,7 +75,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v16</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v17</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -553,7 +553,12 @@ function plBars(t){
 function renderGraph(){
   const t=totals();
   const segs=[{label:'Stocks',value:t.sCur,color:'#C9A227'},{label:'Mutual Funds',value:t.mCur,color:'#4C8DFF'},{label:'Bonds',value:t.bCur,color:'#3DD68C'},{label:'Loans',value:t.lPrin+t.lInt,color:'#B57BE0'}].filter(s=>s.value>0);
-  return renderEngagement()
+  var xr=portfolioXIRR();var absr=t.invested?(t.net/t.invested*100):0;
+  var xirrBox='<div class="add-box"><h3>Return summary</h3><div style="display:flex;gap:28px;flex-wrap:wrap">'
+    +'<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Absolute return</div><div class="num '+plClass(absr)+'" style="font-size:24px;font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+(t.invested?((absr>=0?'+':'')+absr.toFixed(1)+'%'):'—')+'</div></div>'
+    +'<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">XIRR (salaana)</div><div class="num '+(xr==null?'':plClass(xr))+'" style="font-size:24px;font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+(xr==null?'—':((xr>=0?'+':'')+(xr*100).toFixed(1)+'%'))+'</div></div>'
+    +'</div><div class="note">Absolute = kul kitna badha. XIRR = time ko dekhte hue sahi salaana return (holdings ki buy-date honi chahiye).</div></div>';
+  return renderEngagement()+xirrBox
     +'<div class="add-box"><h3>Paisa kahan laga hai (current value)</h3>'+svgDonut(segs)+'</div>'
     +'<div class="add-box"><h3>Net Profit / Loss — trend</h3>'+svgLine(state.history)+'</div>'
     +'<div class="add-box"><h3>Category-wise Profit / Loss</h3>'+plBars(t)+'</div>';
@@ -718,7 +723,7 @@ function renderEngagement(){
   var items=onboardItems(),done=items.filter(function(i){return i[1];}).length,pct=Math.round(done/items.length*100);
   var ob=pct<100?'<div class="add-box"><h3>Shuruaat — '+pct+'% poora</h3>'+items.map(function(i){return '<div style="margin:6px 0;font-size:13px">'+(i[1]?'✅':'⬜')+' '+i[0]+'</div>';}).join('')+'</div>':'';
   var badgeHtml=badges.length?badges.map(function(b){return '<span style="display:inline-block;background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;margin:3px 5px 0 0;font-size:12px">'+b.e+' '+b.n+'</span>';}).join(''):'<span class="note">Holdings add karke badges kamao!</span>';
-  return ob+'<div class="add-box"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="margin:0">🔥 '+(m.streak||0)+'-din streak'+(m.bestStreak?' <span style="color:var(--muted);font-size:12px">· best '+m.bestStreak+'</span>':'')+'</h3><button class="sec-btn" onclick="shareWhatsApp()">🟢 WhatsApp par share</button></div><div style="margin-top:12px">'+badgeHtml+'</div></div>';
+  return ob+'<div class="add-box"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="margin:0">🔥 '+(m.streak||0)+'-din streak'+(m.bestStreak?' <span style="color:var(--muted);font-size:12px">· best '+m.bestStreak+'</span>':'')+'</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="sec-btn" onclick="generateReport()">⬇ PDF Report</button><button class="sec-btn" onclick="shareWhatsApp()">🟢 Share</button></div></div><div style="margin-top:12px">'+badgeHtml+'</div></div>';
 }
 
 /* ---------- NEWS / TIPS ---------- */
@@ -804,6 +809,71 @@ function checkAlerts(){
     if((a.dir==='above'&&cur>=a.target)||(a.dir==='below'&&cur<=a.target)){a.triggeredAt=new Date().toISOString();fired.push(a.label+' '+inr2(cur));}
   });
   if(fired.length){saveState();toast('🔔 Alert hit: '+fired.join(', '));if(activeTab==='alerts')render();}
+}
+
+/* ---------- XIRR ---------- */
+function xirrCalc(cfs){
+  if(!cfs||cfs.length<2)return null;
+  var times=cfs.map(function(c){return new Date(c.date).getTime();});
+  var d0=Math.min.apply(null,times);
+  var f=function(r){var s=0;for(var i=0;i<cfs.length;i++){var yrs=(times[i]-d0)/(1000*60*60*24*365.25);s+=cfs[i].amount/Math.pow(1+r,yrs);}return s;};
+  var lo=-0.9999,hi=10,flo=f(lo),fhi=f(hi);
+  if(!isFinite(flo)||!isFinite(fhi)||flo*fhi>0)return null;
+  for(var k=0;k<200;k++){var mid=(lo+hi)/2,fm=f(mid);if(Math.abs(fm)<1e-7)return mid;if(flo*fm<0){hi=mid;fhi=fm;}else{lo=mid;flo=fm;}}
+  return (lo+hi)/2;
+}
+function portfolioCF(){
+  var cfs=[],cur=0,dated=0;
+  function add(inv,curv,date){cur+=curv;if(date){cfs.push({amount:-inv,date:date});dated++;}}
+  state.stocks.filter(function(x){return !x.exclude;}).forEach(function(s){add(s.qty*s.buyPrice,s.qty*(s.currentPrice||s.buyPrice),s.buyDate);});
+  state.mfs.filter(function(x){return !x.exclude;}).forEach(function(m){add(m.units*m.buyNav,m.units*(m.currentNav||m.buyNav),m.buyDate);});
+  state.bonds.filter(function(x){return !x.exclude;}).forEach(function(b){var c=bondCalc(b);add(c.invested,c.current,b.buyDate);});
+  state.loans.filter(function(x){return !x.exclude;}).forEach(function(l){var c=loanInterest(l);add(+l.principal||0,(+l.principal||0)+c.interest,l.startDate);});
+  cfs.push({amount:cur,date:new Date().toISOString().slice(0,10)});
+  return {cfs:cfs,current:cur,dated:dated};
+}
+function portfolioXIRR(){var p=portfolioCF();if(p.dated<1)return null;return xirrCalc(p.cfs);}
+
+/* ---------- PDF REPORT (browser print → Save as PDF) ---------- */
+function buildReportHTML(){
+  var t=totals(),xr=portfolioXIRR();
+  var d=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  var e=escapeHtml,r=inr;
+  function tbl(title,head,rows){return rows?'<h2>'+title+'</h2><table><thead><tr>'+head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+rows+'</tbody></table>':'';}
+  var st=state.stocks.map(function(s){var inv=s.qty*s.buyPrice,cur=s.qty*(s.currentPrice||s.buyPrice);return '<tr><td>'+e(s.symbol)+'</td><td>'+s.qty+'</td><td>'+r(inv)+'</td><td>'+r(cur)+'</td><td>'+(cur-inv>=0?'+':'')+r(cur-inv)+'</td></tr>';}).join('');
+  var mf=state.mfs.map(function(m){var inv=m.units*m.buyNav,cur=m.units*(m.currentNav||m.buyNav);return '<tr><td>'+e(m.name)+'</td><td>'+m.units+'</td><td>'+r(inv)+'</td><td>'+r(cur)+'</td><td>'+(cur-inv>=0?'+':'')+r(cur-inv)+'</td></tr>';}).join('');
+  var bd=state.bonds.map(function(b){var c=bondCalc(b);return '<tr><td>'+e(b.name)+'</td><td>'+r(c.invested)+'</td><td>'+r(c.current)+'</td><td>'+(c.pl>=0?'+':'')+r(c.pl)+'</td></tr>';}).join('');
+  var ln=state.loans.map(function(l){var c=loanInterest(l);return '<tr><td>'+e(l.borrower)+'</td><td>'+r(l.principal)+'</td><td>'+r(c.interest)+'</td><td>'+r(c.total)+'</td></tr>';}).join('');
+  return '<html><head><meta charset="utf-8"><title>Portfolio Report</title><style>'
+    +'body{font-family:Arial,sans-serif;color:#111;padding:24px;max-width:800px;margin:auto}'
+    +'h1{margin:0 0 2px}h2{margin:22px 0 8px;border-bottom:2px solid #C9A227;padding-bottom:4px}'
+    +'.sub{color:#666;font-size:13px;margin-bottom:16px}'
+    +'.cards{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0}'
+    +'.card{border:1px solid #ddd;border-radius:8px;padding:12px 16px;min-width:140px}'
+    +'.card .l{color:#666;font-size:11px;text-transform:uppercase}.card .v{font-size:20px;font-weight:700}'
+    +'table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}'
+    +'th,td{border:1px solid #ddd;padding:7px 9px;text-align:right}th:first-child,td:first-child{text-align:left}th{background:#f5f5f5}'
+    +'.foot{margin-top:24px;color:#999;font-size:11px;text-align:center}'
+    +'</style></head><body>'
+    +'<h1>Portfolio Report</h1><div class="sub">'+e(myName||myEmail||'')+' · '+d+'</div>'
+    +'<div class="cards">'
+    +'<div class="card"><div class="l">Invested</div><div class="v">'+r(t.invested)+'</div></div>'
+    +'<div class="card"><div class="l">Current Value</div><div class="v">'+r(t.current)+'</div></div>'
+    +'<div class="card"><div class="l">Net P/L</div><div class="v" style="color:'+(t.net>=0?'#0a0':'#c00')+'">'+(t.net>=0?'+':'')+r(t.net)+'</div></div>'
+    +'<div class="card"><div class="l">XIRR</div><div class="v">'+(xr==null?'—':((xr>=0?'+':'')+(xr*100).toFixed(1)+'%'))+'</div></div>'
+    +'</div>'
+    +tbl('Stocks',['Symbol','Qty','Invested','Value','P/L'],st)
+    +tbl('Mutual Funds',['Fund','Units','Invested','Value','P/L'],mf)
+    +tbl('Bonds',['Bond','Invested','Value','P/L'],bd)
+    +tbl('Loans / Interest',['Kisko diya','Principal','Interest','Total'],ln)
+    +'<div class="foot">Portfolio Bahi-Khata — '+d+'</div>'
+    +'</body></html>';
+}
+function generateReport(){
+  var w=window.open('','_blank');
+  if(!w){toast('Popup allow karke dobara try karein');return;}
+  w.document.write(buildReportHTML());w.document.close();w.focus();
+  setTimeout(function(){try{w.print();}catch(e){}},500);
 }
 
 function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
