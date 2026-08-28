@@ -75,7 +75,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v17</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v18</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -105,6 +105,7 @@ let mySuper=false,canSupport=false,canAccounts=false,canSettings=false,adminPerm
 let news=[];
 let leaderboard=[],myLb={name:'',opted_in:false};
 let myName='',myPhone='';
+let myPremium=false,myPremiumUntil=null,myIsPremiumFlag=false,myRefCode='',premiumReqs=[];
 let saveTimer=null;
 const KEY='portfolio-bahikhata-v1';
 function normalize(){state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
@@ -214,7 +215,7 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
+    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('premium','⭐ Premium')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
@@ -223,13 +224,14 @@ function render(){
     +'<div class="panel '+(activeTab==='news'?'active':'')+'">'+renderNews()+'</div>'
     +'<div class="panel '+(activeTab==='rank'?'active':'')+'">'+renderLeaderboard()+'</div>'
     +'<div class="panel '+(activeTab==='alerts'?'active':'')+'">'+renderAlerts()+'</div>'
+    +'<div class="panel '+(activeTab==='premium'?'active':'')+'">'+renderPremium()+'</div>'
     +'<div class="panel '+(activeTab==='support'?'active':'')+'">'+renderSupport()+'</div>'
     +(canAccounts?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'')
     +(canSettings?'<div class="panel '+(activeTab==='settings'?'active':'')+'">'+renderSettings()+'</div>':'');
 }
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
 function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;adminPermUser=null;
-  if(id==='admin'){loadAdminUsers();}
+  if(id==='admin'){loadAdminUsers();loadPaymentReqs();}
   else if(id==='news'){loadNews();}
   else if(id==='rank'){loadLeaderboard();}
   else if(id==='support'){if(canSupport){supportOpenUser=null;loadSupportConvos();}else{loadUserChat();}}
@@ -638,7 +640,22 @@ function renderSettings(){
     +'<div class="note">Ye number sabhi users ke Call/WhatsApp button me dikhega. WhatsApp me country code ke saath, bina + ke (jaise 9198...).</div></div>'
     +'<div class="add-box"><h3>Announcement (sabko upar dikhega)</h3>'
     +'<textarea id="set-ann" style="width:100%;min-height:70px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="Jaise: Kal maintenance rahega 2-3pm.">'+escapeHtml(s.announcement||'')+'</textarea>'
-    +'<div style="margin-top:8px"><button class="add-btn" onclick="saveAnnouncement()">Save</button> <span class="cancel-link" onclick="clearAnnouncement()">Banner hatao</span></div></div>';
+    +'<div style="margin-top:8px"><button class="add-btn" onclick="saveAnnouncement()">Save</button> <span class="cancel-link" onclick="clearAnnouncement()">Banner hatao</span></div></div>'
+    +'<div class="add-box"><h3>Premium — UPI payment</h3><div class="row">'
+    +'<div class="fld"><label>UPI ID (paise yahan aayenge)</label><input id="set-upi" value="'+attr(s.upi_id||'')+'" placeholder="yourname@okhdfcbank" style="width:220px"></div>'
+    +'<div class="fld"><label>Premium price (₹)</label><input id="set-price" value="'+attr(s.premium_price||'')+'" placeholder="99" style="width:110px"></div>'
+    +'<button class="add-btn" onclick="savePremiumSettings()">Save</button></div>'
+    +'<div class="fld" style="margin-top:10px"><label>Premium benefits (list — har line ek point)</label><textarea id="set-benefits" style="width:100%;min-height:80px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="• PDF report&#10;• Price alerts">'+escapeHtml(s.premium_benefits||'')+'</textarea></div>'
+    +'<div style="margin-top:8px"><button class="add-btn" onclick="savePremiumSettings()">Save benefits</button></div>'
+    +'<div class="note">User Premium tab me ye UPI ID, price aur benefits dekhega. Paise aane par Accounts tab me "Payment requests" me approve karo.</div></div>';
+}
+async function savePremiumSettings(){
+  var upi=(document.getElementById('set-upi').value||'').trim();
+  var price=(document.getElementById('set-price').value||'').trim();
+  var ben=(document.getElementById('set-benefits').value||'').trim();
+  var r=await sb.from('app_settings').upsert({id:1,upi_id:upi,premium_price:price,premium_benefits:ben,updated_at:new Date().toISOString()});
+  if(r.error){toast(r.error.message);return;}
+  appSettings.upi_id=upi;appSettings.premium_price=price;appSettings.premium_benefits=ben;render();toast('Premium settings save ho gayi');
 }
 async function saveAnnouncement(){
   var ann=(document.getElementById('set-ann').value||'').trim();
@@ -791,6 +808,7 @@ function renderAlerts(){
   return add+'<div class="add-box"><h3>Aapke alerts</h3><table class="tbl"><thead><tr><th>Alert</th><th>Abhi</th><th></th></tr></thead><tbody>'+(list||'<tr><td colspan="3" class="empty">Koi alert nahi.</td></tr>')+'</tbody></table></div>';
 }
 function addAlert(){
+  if(!myPremium){toast('Price alerts Premium me hain ⭐');activeTab='premium';render();return;}
   var hv=document.getElementById('al-h').value;if(!hv){toast('Holding chuno');return;}
   var parts=hv.split(':'),k=parts[0],hid=parts[1];
   var dir=document.getElementById('al-dir').value,tgt=+document.getElementById('al-tgt').value;
@@ -870,10 +888,70 @@ function buildReportHTML(){
     +'</body></html>';
 }
 function generateReport(){
+  if(!myPremium){toast('PDF report Premium me hai ⭐');activeTab='premium';render();return;}
   var w=window.open('','_blank');
   if(!w){toast('Popup allow karke dobara try karein');return;}
   w.document.write(buildReportHTML());w.document.close();w.focus();
   setTimeout(function(){try{w.print();}catch(e){}},500);
+}
+
+/* ---------- PREMIUM (manual UPI) ---------- */
+function premiumBenefitsText(){return appSettings.premium_benefits||'• PDF report download\n• Price alerts\n• Unlimited holdings\n• Priority support\n• Aage ke naye features';}
+function renderPremium(){
+  var out='';
+  if(myPremium){
+    out+='<div class="add-box"><h3>⭐ Aap Premium ho!</h3><div class="note">'+(myIsPremiumFlag&&!myPremiumUntil?'Lifetime premium 🎉':(myPremiumUntil?('Valid till '+new Date(myPremiumUntil).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})):'Active'))+'</div></div>';
+  }else{
+    var upi=(appSettings.upi_id||'').trim(),price=(appSettings.premium_price||'').trim();
+    var amt=(price||'').replace(/[^0-9.]/g,'');
+    if(upi){
+      out+='<div class="add-box"><h3>Premium lein '+(price?'— ₹'+escapeHtml(price):'')+'</h3>'
+        +'<div class="note">Niche UPI ID par paisa bhejein, phir UTR (reference) daalein — admin verify karke premium kar dega.</div>'
+        +'<div style="font-size:18px;font-weight:700;margin:10px 0">UPI: '+escapeHtml(upi)+'</div>'
+        +'<a class="add-btn" style="text-decoration:none" href="upi://pay?pa='+encodeURIComponent(upi)+'&pn='+encodeURIComponent('Portfolio')+(amt?'&am='+encodeURIComponent(amt):'')+'&cu=INR">UPI app se pay karo</a>'
+        +'<div class="row" style="margin-top:14px"><div class="fld"><label>Payment ke baad UTR / Ref no.</label><input id="pr-utr" placeholder="12-digit reference" style="width:220px"></div><button class="add-btn" onclick="submitPayment()">Submit karo</button></div></div>';
+    }else{
+      out+='<div class="add-box"><h3>Premium</h3><div class="note">Payment jald shuru ho raha hai.</div></div>';
+    }
+  }
+  out+='<div class="add-box"><h3>Premium me kya milega</h3><div style="font-size:13px;white-space:pre-wrap">'+escapeHtml(premiumBenefitsText())+'</div></div>';
+  out+='<div class="add-box"><h3>Dost bulao, premium pao 🎁</h3><div class="note">Aapke link se dost signup kare to <b>dono ko 1 mahina extra premium</b>:</div>'
+    +'<div style="font-size:13px;margin:8px 0;word-break:break-all;color:var(--brass)">'+window.location.origin+'/?ref='+escapeHtml(myRefCode)+'</div>'
+    +'<button class="sec-btn" onclick="shareReferral()">🟢 WhatsApp par bhejo</button></div>';
+  return out;
+}
+async function submitPayment(){
+  var utr=(document.getElementById('pr-utr').value||'').trim();if(!utr){toast('UTR / reference daalo');return;}
+  var r=await sb.from('payment_requests').insert({user_id:myId,amount:(appSettings.premium_price||''),utr:utr,plan:'premium',status:'pending'});
+  if(r.error){toast(r.error.message);return;}
+  toast('Request bhej di ✅ — admin verify karega');
+}
+function shareReferral(){
+  var link=window.location.origin+'/?ref='+myRefCode;
+  var txt='Main is portfolio app se apne investments track karta hoon 📊 Tum bhi try karo, dono ko 1 mahina free premium milega: '+link;
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+}
+async function loadPaymentReqs(){
+  if(!canAccounts)return;
+  try{var r=await sb.from('payment_requests').select('*').eq('status','pending').order('created_at',{ascending:false});premiumReqs=r.data||[];}catch(e){premiumReqs=[];}
+  render();
+}
+async function approvePayment(reqId,uid){
+  var until=new Date();until.setDate(until.getDate()+30);
+  var r1=await sb.from('profiles').update({premium_until:until.toISOString()}).eq('id',uid);
+  if(r1.error){toast('Premium dene me dikkat: '+r1.error.message+' (sirf super admin de sakta hai)');return;}
+  await sb.from('payment_requests').update({status:'approved'}).eq('id',reqId);
+  await loadPaymentReqs();await loadAdminUsers();toast('Premium de diya (30 din)');
+}
+async function rejectPayment(reqId){
+  await sb.from('payment_requests').update({status:'rejected'}).eq('id',reqId);
+  await loadPaymentReqs();toast('Request reject ho gayi');
+}
+async function grantDays(uid,days){
+  var until=new Date();until.setDate(until.getDate()+days);
+  var r=await sb.from('profiles').update({premium_until:until.toISOString()}).eq('id',uid);
+  if(r.error){toast(r.error.message);return;}
+  await loadAdminUsers();toast(days+' din premium de diya');
 }
 
 function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
@@ -923,7 +1001,8 @@ async function doSignup(){
   const password=document.getElementById('au-pass').value;
   if(!name||!phone){toast('Full Name aur Mobile Number bharein');return;}
   if(!email||password.length<6){toast('Email aur 6+ akshar ka password daalein');return;}
-  const {error}=await sb.auth.signUp({email:email,password:password,options:{data:{name:name,phone:phone}}});
+  var ref=new URLSearchParams(location.search).get('ref');
+  const {error}=await sb.auth.signUp({email:email,password:password,options:{data:{name:name,phone:phone,ref:ref||undefined}}});
   if(error){toast(error.message);return;}
   toast('Account ban gaya! Ab Login dabayein.');
 }
@@ -962,11 +1041,11 @@ async function loadAdminUsers(){
   render();
   try{
     const [pr,po]=await Promise.all([
-      sb.from('profiles').select('id,email,name,phone,is_super,can_support,can_accounts,can_settings').order('email'),
+      sb.from('profiles').select('id,email,name,phone,is_super,can_support,can_accounts,can_settings,is_premium,premium_until').order('email'),
       sb.from('portfolios').select('user_id,data')
     ]);
     const pmap={};(po.data||[]).forEach(p=>pmap[p.user_id]=p.data||{});
-    adminUsers=(pr.data||[]).map(u=>({id:u.id,email:u.email,name:u.name,phone:u.phone,is_super:u.is_super,can_support:u.can_support,can_accounts:u.can_accounts,can_settings:u.can_settings,tot:computeTotals(pmap[u.id]||{})}));
+    adminUsers=(pr.data||[]).map(u=>({id:u.id,email:u.email,name:u.name,phone:u.phone,is_super:u.is_super,can_support:u.can_support,can_accounts:u.can_accounts,can_settings:u.can_settings,is_premium:u.is_premium,premium_until:u.premium_until,tot:computeTotals(pmap[u.id]||{})}));
   }catch(e){adminUsers=[];}
   render();
 }
@@ -986,14 +1065,23 @@ function renderAdmin(){
       +'<div class="note">Toggle karte hi turant lagu ho jata hai. User ko dobara login karne par naya access milega.</div></div>';
   }
   if(!adminUsers.length)return '<div class="empty">Users load ho rahe hain… (ya abhi koi user nahi)</div>';
-  var rows=adminUsers.map(function(u){return '<tr>'
-    +'<td><span class="name">'+escapeHtml(u.name||u.email||'—')+'</span><span class="tag">'+escapeHtml(u.email||'')+(u.phone?' · 📱 '+escapeHtml(u.phone):'')+'</span>'+permBadges(u)+'</td>'
+  var reqBox='';
+  if(premiumReqs&&premiumReqs.length){
+    var umap={};adminUsers.forEach(function(u){umap[u.id]=u;});
+    reqBox='<div class="add-box"><h3>💳 Payment requests ('+premiumReqs.length+')</h3><table class="tbl"><thead><tr><th>User</th><th>UTR</th><th></th></tr></thead><tbody>'
+      +premiumReqs.map(function(p){var u=umap[p.user_id];return '<tr><td><span class="name">'+escapeHtml(u?(u.name||u.email):p.user_id)+'</span><span class="tag">'+(u&&u.phone?'📱 '+escapeHtml(u.phone)+' · ':'')+'₹'+escapeHtml(p.amount||'')+'</span></td><td class="num">'+escapeHtml(p.utr||'')+'</td><td><button class="edit" onclick="approvePayment(\''+p.id+'\',\''+p.user_id+'\')">✅ Approve</button><button class="del" onclick="rejectPayment(\''+p.id+'\')">✕</button></td></tr>';}).join('')
+      +'</tbody></table><div class="note">Approve karne par user ko 30 din premium mil jayega. (Sirf super admin de sakta hai.)</div></div>';
+  }
+  var rows=adminUsers.map(function(u){
+    var prem=u.is_premium||(u.premium_until&&new Date(u.premium_until)>new Date());
+    return '<tr>'
+    +'<td><span class="name">'+escapeHtml(u.name||u.email||'—')+'</span>'+(prem?' <span class="tag" style="color:var(--brass);display:inline">⭐ premium</span>':'')+'<span class="tag">'+escapeHtml(u.email||'')+(u.phone?' · 📱 '+escapeHtml(u.phone):'')+'</span>'+permBadges(u)+'</td>'
     +'<td class="num">'+inr(u.tot.current)+'</td>'
     +'<td class="num '+plClass(u.tot.net)+'">'+plSign(u.tot.net)+inr(u.tot.net)+'</td>'
     +'<td><button class="edit" onclick="openUser(\''+u.id+'\',\''+escapeHtml(u.email||'')+'\')">Open</button>'
-    +(mySuper?'<button class="edit" onclick="adminPermUser=\''+u.id+'\';render()">Access</button>':'')+'</td></tr>';}).join('');
-  return '<div class="add-box"><h3>Sabhi users</h3><table class="tbl"><thead><tr><th>User</th><th>Net Worth</th><th>P/L</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
-    +'<div class="note">"Open" se portfolio dekho/badlo. '+(mySuper?'"Access" se kisi ko admin-access do/hatao.':'')+' Upar "← mera account" se wapas.</div></div>';
+    +(mySuper?'<button class="edit" onclick="adminPermUser=\''+u.id+'\';render()">Access</button><button class="edit" onclick="grantDays(\''+u.id+'\',30)">+30d ⭐</button>':'')+'</td></tr>';}).join('');
+  return reqBox+'<div class="add-box"><h3>Sabhi users</h3><table class="tbl"><thead><tr><th>User</th><th>Net Worth</th><th>P/L</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="note">"Open" se portfolio, '+(mySuper?'"Access" se admin-rights, "+30d ⭐" se premium.':'')+' Upar "← mera account" se wapas.</div></div>';
 }
 async function setPerm(uid,field,val){
   var patch={};patch[field]=val;
@@ -1011,9 +1099,11 @@ function backToMine(){viewingUserId=myId;viewingEmail=myEmail;loadPortfolio(myId
 async function afterLogin(session){
   myId=session.user.id;myEmail=session.user.email;
   const ha=document.getElementById('hdrActions');if(ha)ha.style.display='flex';
-  try{const r=await sb.from('profiles').select('is_super,can_support,can_accounts,can_settings,name,phone').eq('id',myId).maybeSingle();
+  try{const r=await sb.from('profiles').select('is_super,can_support,can_accounts,can_settings,name,phone,is_premium,premium_until,referral_code').eq('id',myId).maybeSingle();
     const d=r.data||{};mySuper=!!d.is_super;canSupport=mySuper||!!d.can_support;canAccounts=mySuper||!!d.can_accounts;canSettings=mySuper||!!d.can_settings;
     myName=d.name||'';myPhone=d.phone||'';
+    myIsPremiumFlag=!!d.is_premium;myPremiumUntil=d.premium_until||null;myRefCode=d.referral_code||'';
+    myPremium=myIsPremiumFlag||(myPremiumUntil&&new Date(myPremiumUntil)>new Date());
     myIsAdmin=mySuper||canSupport||canAccounts||canSettings;
   }catch(e){mySuper=canSupport=canAccounts=canSettings=myIsAdmin=false;}
   try{const st=await sb.from('app_settings').select('*').eq('id',1).maybeSingle();appSettings=st.data||{};}catch(e){appSettings={};}
