@@ -90,6 +90,22 @@
   .modal .mfld{margin-top:12px}.modal .mfld label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
   .modal input{width:100%}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+  /* --- micro-interactions, focus states, skeletons (UI polish) --- */
+  .add-btn,.sec-btn,.refresh-btn,.edit,.del{transition:transform .12s ease,filter .15s ease,border-color .15s ease,color .15s ease,background .15s ease}
+  .add-btn:hover,.refresh-btn:hover{transform:translateY(-1px)}
+  .add-btn:active,.sec-btn:active,.refresh-btn:active,.edit:active,.del:active{transform:translateY(1px)}
+  .card,.add-box{transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease}
+  .card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.28);border-color:var(--brass-dim)}
+  .tabs button{transition:color .15s ease,border-color .15s ease,background .15s ease}
+  .cancel-link{transition:color .15s ease}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,label:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+  input:focus,select:focus,textarea:focus{border-color:var(--brass);outline:none}
+  .bad{border-color:var(--loss)!important;box-shadow:0 0 0 2px rgba(241,108,108,.18)}
+  .sk{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 37%,var(--surface) 63%);background-size:400% 100%;animation:sk 1.2s ease infinite;border-radius:10px}
+  @keyframes sk{0%{background-position:100% 0}100%{background-position:-100% 0}}
+  .sk-row{height:46px;margin-bottom:10px}.sk-card{height:92px}
+  .toast{transition:opacity .25s ease,transform .25s ease;transform:translateY(8px)}
+  .toast.show{transform:translateY(0)}
   @media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}.tbl{font-size:12px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}body{padding:14px 10px 80px}}
 </style>
 </head>
@@ -101,13 +117,13 @@
       <div class="sub">Stocks · Mutual Funds · Bonds · Loans — all in one place</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
-      <label class="sec-btn" style="cursor:pointer"><input type="checkbox" id="autoChk" onchange="toggleAuto(this)" style="margin-right:6px;vertical-align:middle">Auto</label>
-      <button class="sec-btn" onclick="exportData()">⬇ Backup</button>
-      <label class="sec-btn" style="cursor:pointer">⬆ Restore<input type="file" accept="application/json" style="display:none" onchange="importData(this)"></label>
-      <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">↻ Live Rates Update</button>
+      <label class="sec-btn" style="cursor:pointer"><input type="checkbox" id="autoChk" onchange="toggleAuto(this)" style="margin-right:6px;vertical-align:middle" title="Auto-refresh prices during market hours">Auto</label>
+      <button class="sec-btn" onclick="exportData()" title="Download a backup of your data">⬇ Backup</button>
+      <label class="sec-btn" style="cursor:pointer" title="Restore from a backup file">⬆ Restore<input type="file" accept="application/json" style="display:none" onchange="importData(this)"></label>
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()" title="Fetch the latest prices now">↻ Live Rates Update</button>
     </div>
   </header>
-  <div id="app"><div class="loading">Loading…</div></div>
+  <div id="app"><div style="max-width:1000px;margin:0 auto"><div class="summary" style="margin-bottom:14px"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -1089,6 +1105,7 @@ async function doDeleteAccount(){
   myId=null;toast('Account deleted');renderLanding();
 }
 
+function markInvalid(ids){(Array.isArray(ids)?ids:[ids]).forEach(function(id){var el=document.getElementById(id);if(el){el.classList.add('bad');var clr=function(){el.classList.remove('bad');el.removeEventListener('input',clr);};el.addEventListener('input',clr);}});var f=document.getElementById(Array.isArray(ids)?ids[0]:ids);if(f)f.focus();}
 /* ---------- IN-APP MODAL (replaces browser prompt/confirm) ---------- */
 function uiModal(opts){
   var ov=document.createElement('div');ov.className='modal-ov';
