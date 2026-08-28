@@ -106,10 +106,18 @@
   .sk-row{height:46px;margin-bottom:10px}.sk-card{height:92px}
   .toast{transition:opacity .25s ease,transform .25s ease;transform:translateY(8px)}
   .toast.show{transform:translateY(0)}
-  @media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}.tbl{font-size:12px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}body{padding:14px 10px 80px}}
+  body.light{--ink:#EEF2F8;--surface:#FFFFFF;--surface2:#F3F6FB;--line:#DCE3EE;--text:#1A2233;--muted:#5B6A83;--brass:#8a6d10;--brass-dim:#B8941f;--gain:#12925a;--loss:#cf4a4a}
+  header{padding-right:44px}
+  #themeBtn{position:fixed;top:10px;right:12px;z-index:900;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:20px;width:38px;height:38px;cursor:pointer;font-size:16px;transition:transform .12s ease}
+  #themeBtn:hover{transform:scale(1.06)}
+  @keyframes chFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .add-box svg{animation:chFade .45s ease both}
+  @media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}.tbl{font-size:12px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}.tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:800;margin:0;padding:6px;background:var(--surface);border-top:1px solid var(--line);border-radius:0;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;gap:4px}.tabs button{flex:0 0 auto;font-size:11px;padding:7px 10px}#themeBtn{top:8px;right:8px;width:34px;height:34px}body{padding:14px 10px 86px}}
 </style>
 </head>
 <body>
+<button id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark theme" aria-label="Toggle light or dark theme">☀️</button>
+<script>(function(){try{if(localStorage.getItem('bk_theme')==='light'){document.body.classList.add('light');var b=document.getElementById('themeBtn');if(b)b.textContent='🌙';}}catch(e){}})();</script>
 <div class="wrap">
   <header>
     <div>
@@ -255,7 +263,7 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">Lent out</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('premium','⭐ Premium')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
+    +'<div class="tabs" role="tablist">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('premium','⭐ Premium')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
@@ -269,7 +277,7 @@ function render(){
     +(canAccounts?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'')
     +(canSettings?'<div class="panel '+(activeTab==='settings'?'active':'')+'">'+renderSettings()+'</div>':'')+footer();
 }
-function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
+function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" role="tab" aria-selected="'+(activeTab===id?'true':'false')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
 function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;adminPermUser=null;
   if(id==='admin'){loadAdminUsers();loadPaymentReqs();}
   else if(id==='news'){loadNews();}
@@ -378,7 +386,7 @@ async function saveStock(){
   const exch=document.getElementById('stk-exch').value;
   const qty=+document.getElementById('stk-qty').value,bp=+document.getElementById('stk-bp').value;
   const dt=document.getElementById('stk-dt').value;
-  if(!sym||!qty||!bp){toast('Enter Symbol, quantity and buy price');return;}
+  if(!sym||!qty||!bp){markInvalid([!sym&&'stk-sym',!qty&&'stk-qty',!bp&&'stk-bp'].filter(Boolean));toast('Enter Symbol, quantity and buy price');return;}
   if(editStock){const s=state.stocks.find(x=>x.id===editStock);Object.assign(s,{symbol:sym,exch,qty,buyPrice:bp,buyDate:dt});editStock=null;saveState();render();toast('Stock updated');try{s.currentPrice=await fetchStockPrice(sym,exch);s.auto=true;saveState();render();}catch(e){}return;}
   const s={id:uid(),symbol:sym,exch,qty,buyPrice:bp,buyDate:dt,currentPrice:bp,auto:false};
   state.stocks.push(s);saveState();render();
@@ -430,8 +438,8 @@ function startEditMf(id){editMf=id;editStock=editLoan=null;render();}
 async function saveMf(){
   const name=document.getElementById('mf-name').value.trim();
   const units=+document.getElementById('mf-units').value,nav=+document.getElementById('mf-nav').value,curnav=+document.getElementById('mf-curnav').value;
-  if(!name){toast('Pick or type the fund name');return;}
-  if(!units||!nav){toast('Enter units and buy NAV');return;}
+  if(!name){markInvalid('mf-name');toast('Pick or type the fund name');return;}
+  if(!units||!nav){markInvalid([!units&&'mf-units',!nav&&'mf-nav'].filter(Boolean));toast('Enter units and buy NAV');return;}
   const dt=document.getElementById('mf-dt').value;
   if(editMf){const m=state.mfs.find(x=>x.id===editMf);const code=(mfSel&&mfSel.name===name)?mfSel.code:m.schemeCode;Object.assign(m,{name,units,buyNav:nav,buyDate:dt,schemeCode:code});if(curnav)m.currentNav=curnav;editMf=null;saveState();render();toast('Fund updated');if(code&&!curnav){try{m.currentNav=await fetchMfNav(code);saveState();render();}catch(e){}}mfSel=null;return;}
   const code=(mfSel&&mfSel.name===name)?mfSel.code:null;
@@ -488,15 +496,15 @@ function saveLoan(){
   const amt=+document.getElementById('ln-amt').value;
   const dt=document.getElementById('ln-dt').value;
   const note=document.getElementById('ln-note').value.trim();
-  if(!name||!amt||!dt){toast('Enter name, amount and date');return;}
+  if(!name||!amt||!dt){markInvalid([!name&&'ln-name',!amt&&'ln-amt',!dt&&'ln-dt'].filter(Boolean));toast('Enter name, amount and date');return;}
   let obj;
   if(loanMode==='fixed'){
     const ma=+document.getElementById('ln-monthly').value,mo=+document.getElementById('ln-months').value;
-    if(!ma||!mo){toast('Enter monthly amount and number of months');return;}
+    if(!ma||!mo){markInvalid([!ma&&'ln-monthly',!mo&&'ln-months'].filter(Boolean));toast('Enter monthly amount and number of months');return;}
     obj={borrower:name,principal:amt,startDate:dt,note,mode:'fixed',monthlyAmount:ma,months:mo};
   }else{
     const rate=+document.getElementById('ln-rate').value;
-    if(!rate){toast('Enter interest %');return;}
+    if(!rate){markInvalid('ln-rate');toast('Enter interest %');return;}
     const type=loanMode==='compound'?document.getElementById('ln-freq').value:'simple';
     obj={borrower:name,principal:amt,startDate:dt,note,mode:'accrue',rate,type};
   }
@@ -571,18 +579,18 @@ function saveBond(){
   const amt=+document.getElementById('bd-amt').value;
   const dt=document.getElementById('bd-dt').value;
   const note=document.getElementById('bd-note').value.trim();
-  if(!name||!amt){toast('Enter bond name and amount');return;}
+  if(!name||!amt){markInvalid([!name&&'bd-name',!amt&&'bd-amt'].filter(Boolean));toast('Enter bond name and amount');return;}
   let obj;
   if(bondMode==='trade'){
     const cur=document.getElementById('bd-cur').value;
     obj={name,amount:amt,buyDate:dt,note,btype:'trade',currentValue:(cur===''?null:+cur)};
   }else if(bondMode==='fixedpay'){
     const ma=+document.getElementById('bd-monthly').value;
-    if(!ma){toast('Enter how much you receive each month');return;}
+    if(!ma){markInvalid('bd-monthly');toast('Enter how much you receive each month');return;}
     obj={name,amount:amt,buyDate:dt,note,btype:'fixedpay',monthlyAmount:ma,months:+document.getElementById('bd-months').value||0};
   }else{
     const rate=+document.getElementById('bd-rate').value;
-    if(!rate){toast('Enter interest %');return;}
+    if(!rate){markInvalid('bd-rate');toast('Enter interest %');return;}
     obj={name,amount:amt,buyDate:dt,note,btype:'fixed',rate,freq:document.getElementById('bd-freq').value,maturityDate:document.getElementById('bd-mat').value};
   }
   if(editBond){const b=state.bonds.find(x=>x.id===editBond);['rate','freq','maturityDate','currentValue','monthlyAmount','months'].forEach(k=>delete b[k]);Object.assign(b,obj);editBond=null;}
@@ -977,7 +985,7 @@ function buildReportHTML(){
     +tbl('Mutual Funds',['Fund','Units','Invested','Value','P/L'],mf)
     +tbl('Bonds',['Bond','Invested','Value','P/L'],bd)
     +tbl('Loans / Interest',['Lent to','Principal','Interest','Total'],ln)
-    +'<div class="foot">Portfolio Bahi-Khata — '+d+'</div>'
+    +'<div class="foot">Bahi-Khata — '+d+'</div>'
     +'</body></html>';
 }
 function generateReport(){
@@ -1105,6 +1113,7 @@ async function doDeleteAccount(){
   myId=null;toast('Account deleted');renderLanding();
 }
 
+function toggleTheme(){var l=document.body.classList.toggle('light');try{localStorage.setItem('bk_theme',l?'light':'dark');}catch(e){}var b=document.getElementById('themeBtn');if(b)b.textContent=l?'🌙':'☀️';}
 function markInvalid(ids){(Array.isArray(ids)?ids:[ids]).forEach(function(id){var el=document.getElementById(id);if(el){el.classList.add('bad');var clr=function(){el.classList.remove('bad');el.removeEventListener('input',clr);};el.addEventListener('input',clr);}});var f=document.getElementById(Array.isArray(ids)?ids[0]:ids);if(f)f.focus();}
 /* ---------- IN-APP MODAL (replaces browser prompt/confirm) ---------- */
 function uiModal(opts){
@@ -1309,7 +1318,7 @@ function renderLanding(){
     +'<div style="font-size:44px">📊</div>'
     +'<h2 style="font-size:26px;margin:8px 0">All your investments, in one place</h2>'
     +'<div class="note" style="font-size:14px;max-width:520px;margin:0 auto">Stocks, mutual funds, bonds and loans — live prices, accurate profit/loss, XIRR and reports. Simple and clear.</div>'
-    +'<div style="margin-top:18px"><button class="add-btn" onclick="renderAuth()">Get started free</button></div>'
+    +'<div style="margin-top:18px"><button class="add-btn" onclick="renderAuth()">Get started free</button></div>'+'<div style="margin-top:10px;font-size:12px;color:var(--muted)">🔒 Bank-grade encryption · 📈 Live NSE &amp; AMFI data · Free to start</div>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:20px">'
     +landCard('📈','Live tracking','Live prices for stocks & funds, auto-refreshed during market hours.')
@@ -1320,8 +1329,16 @@ function renderLanding(){
     +landCard('🔒','Secure cloud','Each user’s data is private; log in from anywhere.')
     +'</div>'
     +'<div class="add-box" style="margin-top:20px;text-align:center"><h3>Premium '+(price?'— just ₹'+escapeHtml(price):'')+'</h3><div class="note">7-day free trial. PDF reports, price alerts, and unlimited features. Cancel anytime.</div><div style="margin-top:12px"><button class="add-btn" onclick="renderAuth()">Create account</button></div></div>'
+    +faqBlock()
     +'</div>'+footer();
 }
+function faqItem(q,a){return '<details style="border-top:1px solid var(--line);padding:10px 0"><summary style="cursor:pointer;font-weight:600;font-size:14px">'+q+'</summary><div class="note" style="margin-top:6px">'+a+'</div></details>';}
+function faqBlock(){return '<div class="add-box" style="margin-top:20px"><h3>Frequently asked</h3>'
+ +faqItem('Is my money safe?','We never touch your money \u2014 this is a tracking tool only. Your data is encrypted and only you can see your amounts.')
+ +faqItem('Where do live prices come from?','Stock prices from public market data and mutual-fund NAVs from AMFI, refreshed during market hours.')
+ +faqItem('Is this investment advice?','No \u2014 everything here is for information only. Always consult a SEBI-registered advisor before investing.')
+ +faqItem('What is included in Premium?','PDF reports, price alerts, unlimited holdings and priority support, with a 7-day free trial.')
+ +'</div>';}
 function landCard(e,t,d){return '<div class="add-box" style="margin:0"><div style="font-size:24px">'+e+'</div><h3 style="margin:6px 0 4px">'+t+'</h3><div class="note">'+d+'</div></div>';}
 
 function footer(){
