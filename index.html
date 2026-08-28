@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <style>
   :root{--ink:#0E1726;--surface:#16223A;--surface2:#1D2B47;--line:#27395C;--text:#E8EDF5;--muted:#8A9BB8;--brass:#C9A227;--brass-dim:#8f7522;--gain:#3DD68C;--loss:#F16C6C;--radius:14px;}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -74,7 +75,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v10</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v11</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -89,16 +90,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* =====================================================================
-   ██  YAHAN APNI 2 VALUE DAALEIN — sirf ye 2 line badalni hain  ██
-   Supabase → Settings → API Keys se:
-   1) Project URL       niche pehli line me
-   2) Publishable key   niche doosri line me
-   (single quotes '...' aur ; waise hi rehne dein)
-   ===================================================================== */
-const SUPABASE_URL     = 'https://htjufhjupdfytdxitolg.supabase.co';       // jaise: https://xxxx.supabase.co
-const SUPABASE_ANON_KEY = 'sb_publishable_KXFWdO9eM-u24jCVzyFgQA_-3ZgzedH';  // jaise: sb_publishable_xxxxx
-/* ===================================================================== */
+/* Supabase ki values ab config.js me hain — is file me kuch nahi badalna. */
+const SUPABASE_URL      = (window.SUPABASE_URL||'').trim();
+const SUPABASE_ANON_KEY = (window.SUPABASE_ANON_KEY||'').trim();
 
 let sb=null;
 let state={stocks:[],mfs:[],loans:[],bonds:[]};
@@ -679,7 +673,7 @@ async function afterLogin(session){
   activeTab='graph';render();
 }
 async function initApp(){
-  if(SUPABASE_URL.indexOf('YAHAN')>-1){document.getElementById('app').innerHTML='<div class="add-box" style="max-width:520px;margin:24px auto"><h3>Ek chhota setup baaki hai</h3><div class="note">index.html me SUPABASE_URL aur SUPABASE_ANON_KEY apni values se badlein (README me steps hain), phir dobara deploy karein.</div></div>';return;}
+  if(!SUPABASE_URL||!SUPABASE_ANON_KEY||SUPABASE_URL.indexOf('YAHAN')>-1||SUPABASE_ANON_KEY.indexOf('YAHAN')>-1){document.getElementById('app').innerHTML='<div class="add-box" style="max-width:520px;margin:24px auto"><h3>Ek chhota setup baaki hai</h3><div class="note">config.js file me apni SUPABASE_URL aur PUBLISHABLE KEY daalein (README dekhein), phir dobara deploy karein.</div></div>';return;}
   sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   const {data:{session}}=await sb.auth.getSession();
   if(session){await afterLogin(session);}else{renderAuth();}
