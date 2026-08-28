@@ -10,7 +10,7 @@
    ===================================================================== */
 
 window.SUPABASE_URL      = 'https://htjufhjupdfytdxitolg.supabase.co';
-window.SUPABASE_ANON_KEY = 'YAHAN_APNI_PUBLISHABLE_KEY_PASTE_KARO';
+window.SUPABASE_ANON_KEY = 'sb_publishable_KXFWdO9eM-u24jCVzyFgQA_-3ZgzedH';
 
 /* KEY kahan se laayein (2 tarike, koi bhi):
    Tarika 1 (sabse pakka): GitHub me abhi wali chalti index.html kholo →
