@@ -75,7 +75,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v13</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v14</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -102,6 +102,7 @@ let loanMode='simple', bondMode='fixed';
 let myId=null,myEmail='',myIsAdmin=false,viewingUserId=null,viewingEmail='',adminUsers=[];
 let appSettings={},supportMsgs=[],supportConvos=[],supportOpenUser=null,supportChannel=null;
 let mySuper=false,canSupport=false,canAccounts=false,canSettings=false,adminPermUser=null;
+let news=[];
 let saveTimer=null;
 const KEY='portfolio-bahikhata-v1';
 function normalize(){state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
@@ -210,12 +211,13 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
+    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
     +'<div class="panel '+(activeTab==='bonds'?'active':'')+'">'+renderBonds()+'</div>'
     +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>'
+    +'<div class="panel '+(activeTab==='news'?'active':'')+'">'+renderNews()+'</div>'
     +'<div class="panel '+(activeTab==='support'?'active':'')+'">'+renderSupport()+'</div>'
     +(canAccounts?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'')
     +(canSettings?'<div class="panel '+(activeTab==='settings'?'active':'')+'">'+renderSettings()+'</div>':'');
@@ -223,6 +225,7 @@ function render(){
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
 function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;adminPermUser=null;
   if(id==='admin'){loadAdminUsers();}
+  else if(id==='news'){loadNews();}
   else if(id==='support'){if(canSupport){supportOpenUser=null;loadSupportConvos();}else{loadUserChat();}}
   else{render();}
 }
@@ -544,7 +547,8 @@ function plBars(t){
 function renderGraph(){
   const t=totals();
   const segs=[{label:'Stocks',value:t.sCur,color:'#C9A227'},{label:'Mutual Funds',value:t.mCur,color:'#4C8DFF'},{label:'Bonds',value:t.bCur,color:'#3DD68C'},{label:'Loans',value:t.lPrin+t.lInt,color:'#B57BE0'}].filter(s=>s.value>0);
-  return '<div class="add-box"><h3>Paisa kahan laga hai (current value)</h3>'+svgDonut(segs)+'</div>'
+  return renderEngagement()
+    +'<div class="add-box"><h3>Paisa kahan laga hai (current value)</h3>'+svgDonut(segs)+'</div>'
     +'<div class="add-box"><h3>Net Profit / Loss — trend</h3>'+svgLine(state.history)+'</div>'
     +'<div class="add-box"><h3>Category-wise Profit / Loss</h3>'+plBars(t)+'</div>';
 }
@@ -670,10 +674,78 @@ function setupRealtime(){
   }).subscribe();
 }
 
+/* ---------- ENGAGEMENT (streak / badges / onboarding / share) ---------- */
+function computeStreak(){
+  if(viewingUserId!==myId)return;
+  state.meta=state.meta||{};
+  var m=state.meta,today=new Date().toISOString().slice(0,10);
+  if(m.lastOpen!==today){
+    var y=new Date();y.setDate(y.getDate()-1);var yest=y.toISOString().slice(0,10);
+    m.streak=(m.lastOpen===yest)?(m.streak||0)+1:1;
+    m.bestStreak=Math.max(m.bestStreak||0,m.streak);
+    m.firstOpen=m.firstOpen||today;m.lastOpen=today;saveState();
+  }
+}
+function earnedBadges(){
+  var t=totals(),m=state.meta||{},hold=state.stocks.length+state.mfs.length+state.bonds.length+state.loans.length,b=[];
+  if(hold>=1)b.push({e:'🌱',n:'Pehla Kadam'});
+  if(hold>=5)b.push({e:'📈',n:'Investor'});
+  if(hold>=10)b.push({e:'💼',n:'Portfolio Builder'});
+  if((m.streak||0)>=3)b.push({e:'🔥',n:'3-din Streak'});
+  if((m.streak||0)>=7)b.push({e:'⚡',n:'7-din Streak'});
+  if(t.net>0)b.push({e:'💚',n:'Profit me'});
+  if(state.stocks.length&&state.mfs.length&&state.bonds.length)b.push({e:'🧭',n:'Diversified'});
+  return b;
+}
+function onboardItems(){
+  var s=state,tot=s.stocks.length+s.mfs.length+s.bonds.length+s.loans.length;
+  var cats=[s.stocks,s.mfs,s.bonds,s.loans].filter(function(a){return a.length;}).length;
+  return [['Pehla holding add karo',tot>0],['3 holdings add karo',tot>=3],['2 alag category use karo (stock/MF/bond/loan)',cats>=2],['Ek baar ⬇ Backup lo',!!(s.meta&&s.meta.backedUp)]];
+}
+function shareWhatsApp(){
+  var t=totals(),pct=t.invested?(t.net/t.invested*100):0;
+  var txt='Maine apna investment portfolio track karna shuru kiya 📊 Abhi tak '+(pct>=0?'+':'')+pct.toFixed(1)+'%! Tum bhi free try karo: '+window.location.origin;
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+}
+function renderEngagement(){
+  var m=state.meta||{},badges=earnedBadges();
+  var items=onboardItems(),done=items.filter(function(i){return i[1];}).length,pct=Math.round(done/items.length*100);
+  var ob=pct<100?'<div class="add-box"><h3>Shuruaat — '+pct+'% poora</h3>'+items.map(function(i){return '<div style="margin:6px 0;font-size:13px">'+(i[1]?'✅':'⬜')+' '+i[0]+'</div>';}).join('')+'</div>':'';
+  var badgeHtml=badges.length?badges.map(function(b){return '<span style="display:inline-block;background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;margin:3px 5px 0 0;font-size:12px">'+b.e+' '+b.n+'</span>';}).join(''):'<span class="note">Holdings add karke badges kamao!</span>';
+  return ob+'<div class="add-box"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="margin:0">🔥 '+(m.streak||0)+'-din streak'+(m.bestStreak?' <span style="color:var(--muted);font-size:12px">· best '+m.bestStreak+'</span>':'')+'</h3><button class="sec-btn" onclick="shareWhatsApp()">🟢 WhatsApp par share</button></div><div style="margin-top:12px">'+badgeHtml+'</div></div>';
+}
+
+/* ---------- NEWS / TIPS ---------- */
+async function loadNews(){
+  try{var r=await sb.from('news').select('*').order('created_at',{ascending:false}).limit(50);news=r.data||[];}catch(e){news=[];}
+  render();
+}
+function renderNews(){
+  var post=canSettings?'<div class="add-box"><h3>Naya News / Tip post karein</h3>'
+    +'<div class="fld" style="margin-bottom:8px"><label>Title</label><input id="news-title" placeholder="Jaise: Market tip" style="width:100%"></div>'
+    +'<textarea id="news-body" placeholder="Poori baat likhein…" style="width:100%;min-height:70px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px"></textarea>'
+    +'<div style="margin-top:8px"><button class="add-btn" onclick="postNews()">Post karo</button></div></div>':'';
+  var list=news.length?news.map(function(n){return '<div class="add-box"><div style="display:flex;justify-content:space-between;gap:8px"><h3 style="margin:0">'+escapeHtml(n.title||'')+'</h3>'+(canSettings?'<span class="cancel-link" onclick="deleteNews(\''+n.id+'\')">hatao</span>':'')+'</div><div style="font-size:13px;margin-top:6px;white-space:pre-wrap">'+escapeHtml(n.body||'')+'</div><div class="note">'+fmtTime(n.created_at)+'</div></div>';}).join(''):'<div class="empty">Abhi koi news nahi.</div>';
+  return post+list;
+}
+async function postNews(){
+  var title=(document.getElementById('news-title').value||'').trim(),body=(document.getElementById('news-body').value||'').trim();
+  if(!title&&!body){toast('Kuch to likhein');return;}
+  var r=await sb.from('news').insert({title:title,body:body});
+  if(r.error){toast(r.error.message);return;}
+  await loadNews();toast('Post ho gaya');
+}
+async function deleteNews(id){
+  var r=await sb.from('news').delete().eq('id',id);
+  if(r.error){toast(r.error.message);return;}
+  await loadNews();
+}
+
 function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
 function delItem(kind,id){state[kind]=state[kind].filter(x=>x.id!==id);saveState();render();}
 
 function exportData(){
+  state.meta=state.meta||{};state.meta.backedUp=true;saveState();
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
   a.href=url;a.download='portfolio-backup-'+new Date().toISOString().slice(0,10)+'.json';
@@ -684,7 +756,7 @@ function importData(input){
   const f=input.files&&input.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
-    if(d&&(d.stocks||d.mfs||d.loans||d.bonds)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[],bonds:d.bonds||[],history:d.history||[]};saveState();render();toast('Backup restore ho gaya');}
+    if(d&&(d.stocks||d.mfs||d.loans||d.bonds)){state={stocks:d.stocks||[],mfs:d.mfs||[],loans:d.loans||[],bonds:d.bonds||[],history:d.history||[],meta:d.meta||{}};saveState();render();toast('Backup restore ho gaya');}
     else toast('Ye sahi backup file nahi lagti');
   }catch(e){toast('File padhi nahi gayi');}};
   r.readAsText(f);input.value='';
@@ -807,6 +879,7 @@ async function afterLogin(session){
   viewingUserId=myId;viewingEmail=myEmail;
   await loadPortfolio(myId);
   maybeSnapshot();
+  computeStreak();
   const ac=document.getElementById('autoChk');if(ac)ac.checked=autoOn;
   activeTab='graph';render();
 }
