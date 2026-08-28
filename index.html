@@ -75,7 +75,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v11</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v12</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -100,6 +100,7 @@ let activeTab='stocks';
 let editStock=null, editMf=null, editLoan=null, editBond=null;
 let loanMode='simple', bondMode='fixed';
 let myId=null,myEmail='',myIsAdmin=false,viewingUserId=null,viewingEmail='',adminUsers=[];
+let appSettings={},supportMsgs=[],supportConvos=[],supportOpenUser=null,supportChannel=null;
 let saveTimer=null;
 const KEY='portfolio-bahikhata-v1';
 function normalize(){state.stocks=state.stocks||[];state.mfs=state.mfs||[];state.loans=state.loans||[];state.bonds=state.bonds||[];}
@@ -207,16 +208,21 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">diya hua</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+(myIsAdmin?tabBtn('admin','👥 Accounts'):'')+'</div>'
+    +'<div class="tabs">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('support','💬 Support')+(myIsAdmin?tabBtn('admin','👥 Accounts'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
     +'<div class="panel '+(activeTab==='bonds'?'active':'')+'">'+renderBonds()+'</div>'
     +'<div class="panel '+(activeTab==='loans'?'active':'')+'">'+renderLoans()+'</div>'
+    +'<div class="panel '+(activeTab==='support'?'active':'')+'">'+renderSupport()+'</div>'
     +(myIsAdmin?'<div class="panel '+(activeTab==='admin'?'active':'')+'">'+renderAdmin()+'</div>':'');
 }
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
-function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;if(id==='admin'){loadAdminUsers();}else{render();}}
+function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;
+  if(id==='admin'){loadAdminUsers();}
+  else if(id==='support'){if(myIsAdmin){supportOpenUser=null;loadSupportConvos();}else{loadUserChat();}}
+  else{render();}
+}
 function exBtn(kind,it){return '<button class="edit" title="Portfolio total me gino / na gino" onclick="toggleExclude(\''+kind+'\',\''+it.id+'\')" style="'+(it.exclude?'border-color:var(--loss);color:var(--loss)':'border-color:var(--brass-dim);color:var(--brass)')+'">'+(it.exclude?'⊘':'∑')+'</button>';}
 function toggleExclude(kind,id){const it=(state[kind]||[]).find(x=>x.id===id);if(it){it.exclude=!it.exclude;saveState();render();}}
 
@@ -562,6 +568,88 @@ async function autoTick(){
 }
 setInterval(autoTick,60000);
 
+/* ---------- SUPPORT ---------- */
+function fmtTime(ts){try{return new Date(ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
+function scrollChat(){setTimeout(function(){var d=document.getElementById('chatScroll');if(d)d.scrollTop=d.scrollHeight;},60);}
+function bubble(m,mineWhen){
+  var mine=m.sender===mineWhen;
+  return '<div style="display:flex;justify-content:'+(mine?'flex-end':'flex-start')+';margin:6px 0"><div style="max-width:78%;background:'+(mine?'var(--brass)':'var(--surface2)')+';color:'+(mine?'#1a1400':'var(--text)')+';padding:8px 12px;border-radius:12px;font-size:13px">'+escapeHtml(m.body)+'<div style="font-size:10px;opacity:.6;margin-top:3px">'+fmtTime(m.created_at)+'</div></div></div>';
+}
+function supportButtons(){
+  var call=(appSettings.support_phone||'').trim();
+  var wa=(appSettings.support_whatsapp||'').replace(/[^0-9]/g,'');
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'
+    +(call?'<a class="add-btn" style="text-decoration:none" href="tel:'+attr(call)+'">📞 Call</a>':'')
+    +(wa?'<a class="sec-btn" style="text-decoration:none" target="_blank" href="https://wa.me/'+wa+'">🟢 WhatsApp</a>':'')
+    +(!call&&!wa?'<span class="note">Support number abhi set nahi hai.</span>':'')+'</div>';
+}
+function renderSupport(){ return myIsAdmin?renderAdminSupport():renderUserChat(); }
+function renderUserChat(){
+  var thread=supportMsgs.map(function(m){return bubble(m,'user');}).join('')||'<div class="empty">Koi baat-cheet nahi. Neeche apna sawaal likhein — hum jaldi reply karenge.</div>';
+  return '<div class="add-box"><h3>Support se baat karein</h3>'+supportButtons()
+    +'<div id="chatScroll" style="max-height:360px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px">'+thread+'</div>'
+    +'<div class="row"><input id="sup-msg" placeholder="Apni problem likhein…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\')sendUserMsg()"><button class="add-btn" onclick="sendUserMsg()">Bhejein</button></div></div>';
+}
+async function loadUserChat(){
+  try{var r=await sb.from('support_messages').select('*').eq('user_id',myId).order('created_at');supportMsgs=r.data||[];}catch(e){supportMsgs=[];}
+  render();scrollChat();
+}
+async function sendUserMsg(){
+  var el=document.getElementById('sup-msg');var body=(el.value||'').trim();if(!body)return;el.value='';
+  var r=await sb.from('support_messages').insert({user_id:myId,sender:'user',body:body});
+  if(r.error){toast(r.error.message);return;}
+  await loadUserChat();
+}
+function renderAdminSupport(){
+  var settings='<div class="add-box"><h3>Support number (yahan se edit karein)</h3><div class="row">'
+    +'<div class="fld"><label>Call number</label><input id="set-phone" value="'+attr(appSettings.support_phone||'')+'" placeholder="+919812345678" style="width:180px"></div>'
+    +'<div class="fld"><label>WhatsApp number</label><input id="set-wa" value="'+attr(appSettings.support_whatsapp||'')+'" placeholder="919812345678" style="width:180px"></div>'
+    +'<button class="add-btn" onclick="saveSupportNumbers()">Save</button></div>'
+    +'<div class="note">Ye number sabhi users ko Call/WhatsApp button me dikhega. WhatsApp me country code ke saath (jaise 91...), bina + ke.</div></div>';
+  if(supportOpenUser){
+    var c=supportConvos.find(function(x){return x.uid===supportOpenUser;});
+    var thread=(c?c.msgs:[]).map(function(m){return bubble(m,'admin');}).join('')||'<div class="empty">—</div>';
+    return settings+'<div class="add-box"><h3>'+escapeHtml(c?c.email:'')+' <span class="cancel-link" onclick="supportOpenUser=null;render()">← list par wapas</span></h3>'
+      +'<div id="chatScroll" style="max-height:360px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px">'+thread+'</div>'
+      +'<div class="row"><input id="adm-msg" placeholder="Reply likhein…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\')sendAdminReply()"><button class="add-btn" onclick="sendAdminReply()">Reply</button></div></div>';
+  }
+  var list=supportConvos.length?supportConvos.map(function(c){return '<tr><td><span class="name">'+escapeHtml(c.email)+'</span><span class="tag">'+escapeHtml((c.last||'').slice(0,70))+'</span></td><td class="num">'+c.count+'</td><td><button class="edit" onclick="openConvo(\''+c.uid+'\')">Open</button></td></tr>';}).join(''):'<tr><td colspan="3" class="empty">Abhi koi support message nahi.</td></tr>';
+  return settings+'<div class="add-box"><h3>Support conversations</h3><table class="tbl"><thead><tr><th>User</th><th>Msgs</th><th></th></tr></thead><tbody>'+list+'</tbody></table></div>';
+}
+async function loadSupportConvos(){
+  try{
+    var mr=await sb.from('support_messages').select('*').order('created_at');
+    var pr=await sb.from('profiles').select('id,email');
+    var emap={};(pr.data||[]).forEach(function(p){emap[p.id]=p.email;});
+    var map={};(mr.data||[]).forEach(function(m){(map[m.user_id]=map[m.user_id]||[]).push(m);});
+    supportConvos=Object.keys(map).map(function(uid){var arr=map[uid];var last=arr[arr.length-1];return {uid:uid,email:emap[uid]||uid,last:last.body,lastAt:last.created_at,count:arr.length,msgs:arr};});
+    supportConvos.sort(function(a,b){return new Date(b.lastAt)-new Date(a.lastAt);});
+  }catch(e){supportConvos=[];}
+  render();if(supportOpenUser)scrollChat();
+}
+function openConvo(uid){supportOpenUser=uid;render();scrollChat();}
+async function sendAdminReply(){
+  var el=document.getElementById('adm-msg');var body=(el.value||'').trim();if(!body||!supportOpenUser)return;el.value='';
+  var r=await sb.from('support_messages').insert({user_id:supportOpenUser,sender:'admin',body:body});
+  if(r.error){toast(r.error.message);return;}
+  await loadSupportConvos();scrollChat();
+}
+async function saveSupportNumbers(){
+  var phone=(document.getElementById('set-phone').value||'').trim();
+  var wa=(document.getElementById('set-wa').value||'').trim();
+  var r=await sb.from('app_settings').upsert({id:1,support_phone:phone,support_whatsapp:wa,updated_at:new Date().toISOString()});
+  if(r.error){toast(r.error.message);return;}
+  appSettings.support_phone=phone;appSettings.support_whatsapp=wa;render();toast('Support number save ho gaya');
+}
+function setupRealtime(){
+  if(supportChannel||!sb)return;
+  supportChannel=sb.channel('support-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages'},function(payload){
+    var m=payload.new;
+    if(myIsAdmin){ if(activeTab==='support')loadSupportConvos(); }
+    else if(m.user_id===myId){ supportMsgs.push(m); if(activeTab==='support'){render();scrollChat();} }
+  }).subscribe();
+}
+
 function cancelEdit(){editStock=editMf=editLoan=editBond=null;loanMode='simple';bondMode='fixed';render();}
 function delItem(kind,id){state[kind]=state[kind].filter(x=>x.id!==id);saveState();render();}
 
@@ -666,6 +754,8 @@ async function afterLogin(session){
   myId=session.user.id;myEmail=session.user.email;
   const ha=document.getElementById('hdrActions');if(ha)ha.style.display='flex';
   try{const r=await sb.from('profiles').select('is_admin').eq('id',myId).maybeSingle();myIsAdmin=!!(r.data&&r.data.is_admin);}catch(e){myIsAdmin=false;}
+  try{const st=await sb.from('app_settings').select('*').eq('id',1).maybeSingle();appSettings=st.data||{};}catch(e){appSettings={};}
+  setupRealtime();
   viewingUserId=myId;viewingEmail=myEmail;
   await loadPortfolio(myId);
   maybeSnapshot();
