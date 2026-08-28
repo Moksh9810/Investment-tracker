@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
   :root{--ink:#0E1726;--surface:#16223A;--surface2:#1D2B47;--line:#27395C;--text:#E8EDF5;--muted:#8A9BB8;--brass:#C9A227;--brass-dim:#8f7522;--gain:#3DD68C;--loss:#F16C6C;--radius:14px;}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -75,7 +76,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v18</span></h1>
+      <h1>Portfolio Bahi-Khata<span class="dot">.</span> <span class="ver">v19</span></h1>
       <div class="sub">Stocks · Mutual Funds · Interest / Loans — sab ek jagah</div>
     </div>
     <div id="hdrActions" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
@@ -647,7 +648,11 @@ function renderSettings(){
     +'<button class="add-btn" onclick="savePremiumSettings()">Save</button></div>'
     +'<div class="fld" style="margin-top:10px"><label>Premium benefits (list — har line ek point)</label><textarea id="set-benefits" style="width:100%;min-height:80px;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-family:inherit;font-size:13px" placeholder="• PDF report&#10;• Price alerts">'+escapeHtml(s.premium_benefits||'')+'</textarea></div>'
     +'<div style="margin-top:8px"><button class="add-btn" onclick="savePremiumSettings()">Save benefits</button></div>'
-    +'<div class="note">User Premium tab me ye UPI ID, price aur benefits dekhega. Paise aane par Accounts tab me "Payment requests" me approve karo.</div></div>';
+    +'<div class="note">User Premium tab me ye UPI ID, price aur benefits dekhega. Paise aane par Accounts tab me "Payment requests" me approve karo.</div></div>'
+    +'<div class="add-box"><h3>Payment methods ON / OFF</h3>'
+    +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;margin:8px 0;cursor:pointer"><input type="checkbox" '+(s.upi_on!==false?'checked':'')+' onchange="setToggle(\'upi_on\',this.checked)" style="width:16px;height:16px"> Manual UPI ON (UPI ID + UTR approve)</label>'
+    +'<label style="display:flex;gap:10px;align-items:center;font-size:13px;margin:8px 0;cursor:pointer"><input type="checkbox" '+(s.razorpay_on?'checked':'')+' onchange="setToggle(\'razorpay_on\',this.checked)" style="width:16px;height:16px"> Razorpay auto-payment ON (turant premium)</label>'
+    +'<div class="note"><b>Razorpay ON karne se pehle</b> ek baar Vercel me 4 keys daalni hongi (README me steps — copy-paste, coding nahi). Uske baad ye toggle jab chaaho ON/OFF karo. Dono ek saath bhi chal sakte hain.</div></div>';
 }
 async function savePremiumSettings(){
   var upi=(document.getElementById('set-upi').value||'').trim();
@@ -904,21 +909,46 @@ function renderPremium(){
   }else{
     var upi=(appSettings.upi_id||'').trim(),price=(appSettings.premium_price||'').trim();
     var amt=(price||'').replace(/[^0-9.]/g,'');
-    if(upi){
-      out+='<div class="add-box"><h3>Premium lein '+(price?'— ₹'+escapeHtml(price):'')+'</h3>'
-        +'<div class="note">Niche UPI ID par paisa bhejein, phir UTR (reference) daalein — admin verify karke premium kar dega.</div>'
-        +'<div style="font-size:18px;font-weight:700;margin:10px 0">UPI: '+escapeHtml(upi)+'</div>'
-        +'<a class="add-btn" style="text-decoration:none" href="upi://pay?pa='+encodeURIComponent(upi)+'&pn='+encodeURIComponent('Portfolio')+(amt?'&am='+encodeURIComponent(amt):'')+'&cu=INR">UPI app se pay karo</a>'
-        +'<div class="row" style="margin-top:14px"><div class="fld"><label>Payment ke baad UTR / Ref no.</label><input id="pr-utr" placeholder="12-digit reference" style="width:220px"></div><button class="add-btn" onclick="submitPayment()">Submit karo</button></div></div>';
-    }else{
-      out+='<div class="add-box"><h3>Premium</h3><div class="note">Payment jald shuru ho raha hai.</div></div>';
+    var methods='';
+    if(appSettings.razorpay_on){
+      methods+='<button class="add-btn" style="margin-bottom:10px" onclick="payRazorpay()">💳 Online pay karo (turant premium)</button>'
+        +'<div class="note" style="margin-bottom:12px">Card / UPI / Netbanking — pay karte hi premium apne-aap chalu.</div>';
     }
+    if(appSettings.upi_on!==false && upi){
+      methods+='<div style="border-top:1px solid var(--line);padding-top:12px"><div class="note">Ya UPI se seedha bhejein, phir UTR daalein (admin verify karega):</div>'
+        +'<div style="font-size:18px;font-weight:700;margin:8px 0">UPI: '+escapeHtml(upi)+'</div>'
+        +'<a class="sec-btn" style="text-decoration:none" href="upi://pay?pa='+encodeURIComponent(upi)+'&pn='+encodeURIComponent('Portfolio')+(amt?'&am='+encodeURIComponent(amt):'')+'&cu=INR">UPI app se pay karo</a>'
+        +'<div class="row" style="margin-top:12px"><div class="fld"><label>UTR / Ref no.</label><input id="pr-utr" placeholder="12-digit reference" style="width:200px"></div><button class="add-btn" onclick="submitPayment()">Submit</button></div></div>';
+    }
+    if(!methods)methods='<div class="note">Payment jald shuru ho raha hai.</div>';
+    out+='<div class="add-box"><h3>Premium lein '+(price?'— ₹'+escapeHtml(price):'')+'</h3>'+methods+'</div>';
   }
   out+='<div class="add-box"><h3>Premium me kya milega</h3><div style="font-size:13px;white-space:pre-wrap">'+escapeHtml(premiumBenefitsText())+'</div></div>';
   out+='<div class="add-box"><h3>Dost bulao, premium pao 🎁</h3><div class="note">Aapke link se dost signup kare to <b>dono ko 1 mahina extra premium</b>:</div>'
     +'<div style="font-size:13px;margin:8px 0;word-break:break-all;color:var(--brass)">'+window.location.origin+'/?ref='+escapeHtml(myRefCode)+'</div>'
     +'<button class="sec-btn" onclick="shareReferral()">🟢 WhatsApp par bhejo</button></div>';
   return out;
+}
+async function payRazorpay(){
+  if(typeof Razorpay==='undefined'){toast('Razorpay load nahi hua — page refresh karein');return;}
+  var price=(appSettings.premium_price||'').replace(/[^0-9.]/g,'')||'99';
+  var o;
+  try{var r=await fetch('/api/rzp-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:price})});o=await r.json();if(!r.ok||!o.order_id){toast(o.error||'Order fail');return;}}catch(e){toast('Order fail — internet/keys check karein');return;}
+  var opt={key:o.key_id,order_id:o.order_id,amount:o.amount,currency:'INR',name:'Premium',description:'Portfolio Premium',prefill:{email:myEmail,contact:myPhone},theme:{color:'#C9A227'},
+    handler:async function(resp){
+      try{var vr=await fetch('/api/rzp-verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpay_order_id:resp.razorpay_order_id,razorpay_payment_id:resp.razorpay_payment_id,razorpay_signature:resp.razorpay_signature,user_id:myId,days:30})});
+        var vj=await vr.json();
+        if(vj.ok){toast('Premium activate ho gaya 🎉');try{var s=await sb.from('profiles').select('is_premium,premium_until').eq('id',myId).maybeSingle();if(s.data){myPremiumUntil=s.data.premium_until;myIsPremiumFlag=!!s.data.is_premium;myPremium=true;}}catch(e){myPremium=true;}render();}
+        else{toast('Verify fail: '+(vj.error||''));}
+      }catch(e){toast('Verify error');}
+    }};
+  try{var rz=new Razorpay(opt);rz.open();}catch(e){toast('Razorpay khulne me dikkat');}
+}
+async function setToggle(field,val){
+  var patch={id:1,updated_at:new Date().toISOString()};patch[field]=val;
+  var r=await sb.from('app_settings').upsert(patch);
+  if(r.error){toast(r.error.message);return;}
+  appSettings[field]=val;render();toast(field+' = '+(val?'ON':'OFF'));
 }
 async function submitPayment(){
   var utr=(document.getElementById('pr-utr').value||'').trim();if(!utr){toast('UTR / reference daalo');return;}
