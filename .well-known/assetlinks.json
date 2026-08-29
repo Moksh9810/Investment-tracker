@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.investment_tracker_beta_nine.twa",
+    "sha256_cert_fingerprints": ["98:33:F1:5D:D8:3E:46:6F:E5:44:B9:1A:99:C1:08:77:0B:09:EC:1E:1A:66:A0:BA:4E:76:CA:D7:0A:16:84:1A"]
+  }
+}]
