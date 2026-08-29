@@ -49,9 +49,15 @@
   .breakdown{display:flex;gap:22px;flex-wrap:wrap}.breakdown div{font-size:12px;color:var(--muted)}
   .breakdown b{display:block;font-size:16px;color:var(--text);font-family:'Space Grotesk',sans-serif;margin-top:2px}
   .gain{color:var(--gain)}.loss{color:var(--loss)}
-  .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
-  .tab{background:none;border:none;color:var(--muted);padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600;font-family:'Space Grotesk',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px}
-  .tab.active{color:var(--brass);border-bottom-color:var(--brass)}
+  .tabs{display:flex;flex-direction:column;gap:2px;position:fixed;top:0;left:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--line);padding:64px 10px 20px;z-index:950;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto}
+  .tabs.open{transform:translateX(0)}
+  .tab{background:none;border:none;color:var(--muted);padding:12px 14px;cursor:pointer;font-size:14px;font-weight:600;font-family:'Space Grotesk',sans-serif;text-align:left;border-radius:8px;border-left:3px solid transparent}
+  .tab.active{color:var(--brass);background:var(--surface2);border-left-color:var(--brass)}
+  .tab:hover{background:var(--surface2)}
+  .menu-overlay{display:none;position:fixed;inset:0;background:rgba(6,10,18,.5);z-index:940}
+  .menu-overlay.open{display:block}
+  #menuBtn{position:fixed;top:10px;left:12px;z-index:960;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:17px;transition:transform .12s ease}
+  #menuBtn:hover{transform:scale(1.06)}
   .panel{display:none}.panel.active{display:block}
   .tbl{width:100%;border-collapse:collapse;font-size:13px}
   .tbl th{text-align:right;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line)}
@@ -107,16 +113,18 @@
   .toast{transition:opacity .25s ease,transform .25s ease;transform:translateY(8px)}
   .toast.show{transform:translateY(0)}
   body.light{--ink:#EEF2F8;--surface:#FFFFFF;--surface2:#F3F6FB;--line:#DCE3EE;--text:#1A2233;--muted:#5B6A83;--brass:#8a6d10;--brass-dim:#B8941f;--gain:#12925a;--loss:#cf4a4a}
-  header{padding-right:44px}
+  header{padding-right:44px;padding-left:46px}
   #themeBtn{position:fixed;top:10px;right:12px;z-index:900;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:20px;width:38px;height:38px;cursor:pointer;font-size:16px;transition:transform .12s ease}
   #themeBtn:hover{transform:scale(1.06)}
   @keyframes chFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .add-box svg{animation:chFade .45s ease both}
-  @media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}.tbl{font-size:12px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}.tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:800;margin:0;padding:6px;background:var(--surface);border-top:1px solid var(--line);border-radius:0;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;gap:4px}.tabs button{flex:0 0 auto;font-size:11px;padding:7px 10px}#themeBtn{top:8px;right:8px;width:34px;height:34px}body{padding:14px 10px 86px}}
+  @media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}.pl-strip .net{font-size:26px}.tbl{font-size:12px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}.tabs{width:210px}#themeBtn{top:8px;right:8px;width:34px;height:34px}#menuBtn{top:8px;left:8px;width:34px;height:34px}header{padding-left:42px}body{padding:14px 10px 20px}}
 </style>
 </head>
 <body>
 <button id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark theme" aria-label="Toggle light or dark theme">☀️</button>
+<button id="menuBtn" onclick="toggleMenu()" title="Menu" aria-label="Open menu">☰</button>
+<div class="menu-overlay" onclick="toggleMenu()"></div>
 <script>(function(){try{if(localStorage.getItem('bk_theme')==='light'){document.body.classList.add('light');var b=document.getElementById('themeBtn');if(b)b.textContent='🌙';}}catch(e){}})();</script>
 <div class="wrap">
   <header>
@@ -143,6 +151,8 @@ const SUPABASE_ANON_KEY = (window.SUPABASE_ANON_KEY||'').trim();
 let sb=null;
 let state={stocks:[],mfs:[],loans:[],bonds:[]};
 let activeTab='stocks';
+let menuOpen=false;
+function toggleMenu(){menuOpen=!menuOpen;document.querySelector('.tabs')&&document.querySelector('.tabs').classList.toggle('open',menuOpen);document.querySelector('.menu-overlay').classList.toggle('open',menuOpen);}
 let editStock=null, editMf=null, editLoan=null, editBond=null;
 let loanMode='simple', bondMode='fixed';
 let myId=null,myEmail='',myIsAdmin=false,viewingUserId=null,viewingEmail='',adminUsers=[];
@@ -263,7 +273,7 @@ function render(){
     +'<div class="card"><div class="lbl">Bonds</div><div class="big num">'+inr(t.bCur)+'</div><div class="sm num '+plClass(t.bGain)+'">'+plSign(t.bGain)+inr(t.bGain)+'</div></div>'
     +'<div class="card"><div class="lbl">Loan Principal</div><div class="big num">'+inr(t.lPrin)+'</div><div class="sm" style="color:var(--muted)">Lent out</div></div>'
     +'<div class="card"><div class="lbl">Interest Earned</div><div class="big num gain">'+inr(t.lInt)+'</div><div class="sm" style="color:var(--muted)">aaj tak</div></div></div>'
-    +'<div class="tabs" role="tablist">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('premium','⭐ Premium')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
+    +'<div class="tabs'+(menuOpen?' open':'')+'" role="tablist">'+tabBtn('graph','📊 Graph')+tabBtn('stocks','Stocks')+tabBtn('mfs','Mutual Funds')+tabBtn('bonds','Bonds')+tabBtn('loans','Loans / Interest')+tabBtn('news','📰 News')+tabBtn('rank','🏆 Rank')+tabBtn('alerts','🔔 Alerts')+tabBtn('premium','⭐ Premium')+tabBtn('support','💬 Support')+(canAccounts?tabBtn('admin','👥 Accounts'):'')+(canSettings?tabBtn('settings','⚙️ Settings'):'')+'</div>'
     +'<div class="panel '+(activeTab==='graph'?'active':'')+'">'+renderGraph()+'</div>'
     +'<div class="panel '+(activeTab==='stocks'?'active':'')+'">'+renderStocks()+'</div>'
     +'<div class="panel '+(activeTab==='mfs'?'active':'')+'">'+renderMfs()+'</div>'
@@ -279,6 +289,7 @@ function render(){
 }
 function tabBtn(id,label){return '<button class="tab '+(activeTab===id?'active':'')+'" role="tab" aria-selected="'+(activeTab===id?'true':'false')+'" onclick="switchTab(\''+id+'\')">'+label+'</button>';}
 function switchTab(id){activeTab=id;editStock=editMf=editLoan=editBond=null;adminPermUser=null;
+  menuOpen=false;document.querySelector('.menu-overlay')&&document.querySelector('.menu-overlay').classList.remove('open');
   if(id==='admin'){loadAdminUsers();loadPaymentReqs();}
   else if(id==='news'){loadNews();}
   else if(id==='rank'){loadLeaderboard();}
