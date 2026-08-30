@@ -2,18 +2,14 @@
 <html class="dark" lang="en">
 <head>
     <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Bahi-Khata — Track Your Investments</title>
-    <meta name="description" content="Track your stocks, mutual funds, bonds and loans in one place. Live prices, real returns (XIRR), reports and alerts.">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230E1116'/%3E%3Crect x='16' y='16' width='68' height='68' rx='16' fill='%23C9A227'/%3E%3Ctext x='50' y='68' font-size='46' font-family='Arial' font-weight='bold' text-anchor='middle' fill='%230E1116'%3E%E2%82%B9%3C/text%3E%3C/svg%3E">
-    
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="config.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
 
     <script id="tailwind-config">
         tailwind.config = {
@@ -36,11 +32,14 @@
                         "inverse-surface": "#e4e1f0", "primary-container": "#a078ff", "surface-container-low": "#1b1b25",
                         "tertiary-container": "#ca8100", "surface-bright": "#393844", "primary-fixed-dim": "#d0bcff",
                         "surface": "#12121d", "surface-container-high": "#292934", "on-surface": "#e4e1f0",
-                        "surface-container-lowest": "#0d0d17", "tertiary": "#ffb95f", "success": "#4ade80", "gain": "#4ade80", "loss": "#ffb4ab"
+                        "surface-container-lowest": "#0d0d17", "tertiary": "#ffb95f", "success": "#4ade80", "success-glow": "rgba(74, 222, 128, 0.3)"
                     },
                     borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
                     spacing: { unit: "8px", gutter: "24px", "card-gap": "16px", "container-padding-mobile": "20px", "container-padding-desktop": "40px" },
-                    fontFamily: { "data-lg": ["JetBrains Mono"], "headline-lg": ["Inter"], "label-sm": ["JetBrains Mono"], "headline-lg-mobile": ["Inter"], "body-md": ["Inter"], "display-lg": ["Inter"] },
+                    fontFamily: {
+                        "data-lg": ["JetBrains Mono"], "headline-lg": ["Inter"], "label-sm": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"], "body-md": ["Inter"], "display-lg": ["Inter"]
+                    },
                     fontSize: {
                         "data-lg": ["20px", { lineHeight: "28px", letterSpacing: "0.02em", fontWeight: "500" }],
                         "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
@@ -55,336 +54,220 @@
     </script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: #12121d; color: #e4e1f0; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-        
-        .glass-panel {
-            background: rgba(31, 31, 41, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .glow-text-green { text-shadow: 0 0 10px rgba(76, 215, 246, 0.5); }
-        .glow-text-red { text-shadow: 0 0 10px rgba(255, 180, 171, 0.5); }
-        .glow-text-primary { text-shadow: 0 0 10px rgba(208, 188, 255, 0.3); }
-
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } 
-        ::-webkit-scrollbar-thumb { background: #34343f; border-radius: 4px; }
-
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-
+        body { background-color: #12121d; color: #e4e1f0; overflow-x: hidden; }
+        .glass-panel { background: rgba(31,31,41,0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); border-left: 1px solid rgba(255,255,255,0.1); }
+        .glass-panel-hover:hover { backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); box-shadow: inset 0 0 20px rgba(255,255,255,0.05); }
+        .glow-text-success { color: #4ade80; text-shadow: 0 0 10px rgba(74,222,128,0.3); }
+        .glow-text-primary { color: #d0bcff; text-shadow: 0 0 10px rgba(208,188,255,0.3); }
+        @keyframes strokeDash { to { stroke-dashoffset: 0; } }
+        .animated-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: strokeDash 2s ease-out forwards; }
+        #nav-drawer { transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
+        #nav-drawer.open { transform: translateX(0); }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
         .panel { display: none; }
-        .panel.active { display: flex; flex-direction: column; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-
-        .tab-active { background: rgba(208, 188, 255, 0.2); color: #d0bcff; border-left: 4px solid #d0bcff; }
+        .panel.active { display: block; }
     </style>
 </head>
-<body class="bg-background text-on-background relative">
-    <div class="fixed inset-0 pointer-events-none z-[-1]" style="background: radial-gradient(circle at 50% -20%, rgba(208, 188, 255, 0.05), transparent 60%);"></div>
+<body class="min-h-screen relative font-body-md text-body-md">
+    <div class="fixed inset-0 w-full h-full -z-10">
+        <canvas id="shader-canvas" style="display:block;width:100%;height:100%"></canvas>
+    </div>
 
     <!-- AUTH SCREEN -->
-    <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 fade-in">
+    <div id="auth-screen" class="flex items-center justify-center min-h-screen p-4">
         <div class="glass-panel rounded-2xl p-8 w-full max-w-md">
-            <h1 class="font-display-lg text-display-lg text-primary mb-2">Bahi-Khata</h1>
-            <p class="text-on-surface-variant mb-8">Track your investments, maximize returns</p>
-            
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="block text-label-sm text-on-surface-variant mb-2">Email</label>
-                    <input type="email" id="auth-email" placeholder="you@example.com" class="w-full glass-panel rounded-lg px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary" />
-                </div>
-                <div>
-                    <label class="block text-label-sm text-on-surface-variant mb-2">Password</label>
-                    <input type="password" id="auth-password" placeholder="••••••••" class="w-full glass-panel rounded-lg px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary" />
-                </div>
-                <button id="auth-submit" class="w-full py-3 rounded-lg bg-primary text-on-primary font-bold hover:bg-primary-container transition-all shadow-[0_0_15px_rgba(208,188,255,0.3)]">Login</button>
-                <button id="auth-signup" class="w-full py-3 rounded-lg border border-outline text-on-surface-variant hover:bg-white/5 transition-all">Sign Up</button>
+            <h1 class="font-headline-lg text-headline-lg text-primary mb-2">₹ Bahi-Khata</h1>
+            <p class="text-on-surface-variant mb-8">Track investments, maximize returns</p>
+            <div class="space-y-4">
+                <input type="email" id="auth-email" placeholder="Email" class="w-full glass-panel rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary" />
+                <input type="password" id="auth-password" placeholder="Password" class="w-full glass-panel rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary" />
+                <button id="auth-btn" class="w-full py-3 rounded-lg bg-primary text-on-primary font-bold hover:bg-primary-container shadow-[0_0_15px_rgba(208,188,255,0.3)]">Login</button>
             </div>
         </div>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="app-screen" class="hidden flex">
-        <!-- DESKTOP SIDEBAR -->
-        <nav class="hidden md:flex flex-col py-gutter bg-surface-container/95 dark:bg-surface-container/95 backdrop-blur-2xl fixed left-0 top-0 h-full w-72 z-[60] border-r border-white/10 shadow-2xl">
-            <div class="px-gutter mb-8">
-                <h1 class="font-headline-lg text-headline-lg text-primary">₹ Bahi-Khata</h1>
+    <!-- APP SCREEN -->
+    <div id="app-screen" class="hidden">
+        <!-- TOP BAR -->
+        <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm flex items-center justify-between px-gutter h-16">
+            <div class="flex items-center gap-4">
+                <button class="text-primary p-2 hover:bg-white/5 rounded-full" id="menu-btn">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">Bahi-Khata</h1>
             </div>
-            <div class="flex-1 overflow-y-auto no-scrollbar px-unit space-y-1">
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md tab-active" data-tab="dashboard">
-                    <span class="material-symbols-outlined">monitoring</span> <span>Dashboard</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="stocks">
-                    <span class="material-symbols-outlined">show_chart</span> <span>Stocks</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="mf">
-                    <span class="material-symbols-outlined">account_balance</span> <span>Mutual Funds</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="bonds">
-                    <span class="material-symbols-outlined">payments</span> <span>Bonds</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="loans">
-                    <span class="material-symbols-outlined">real_estate_agent</span> <span>Loans</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="premium">
-                    <span class="material-symbols-outlined">workspace_premium</span> <span>Premium</span>
-                </a>
-            </div>
-            <div class="mt-auto px-unit pt-4 border-t border-white/5 space-y-1">
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="settings">
-                    <span class="material-symbols-outlined">settings</span> <span>Settings</span>
-                </a>
-            </div>
-        </nav>
-
-        <!-- MOBILE HEADER -->
-        <header class="md:hidden flex items-center justify-between px-gutter h-16 w-full bg-surface/80 backdrop-blur-xl fixed top-0 z-50 border-b border-white/10 shadow-sm">
-            <button id="mobile-menu-btn" class="text-on-surface-variant hover:bg-white/5 p-2 rounded-full transition-colors">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
-            <h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">₹ Bahi-Khata</h1>
-            <button id="mobile-profile-btn" class="text-on-surface-variant hover:bg-white/5 p-2 rounded-full transition-colors">
-                <span class="material-symbols-outlined">account_circle</span>
+            <button id="logout-btn" class="text-on-surface-variant p-2 hover:bg-white/5 rounded-full">
+                <span class="material-symbols-outlined">logout</span>
             </button>
         </header>
 
-        <!-- MOBILE DRAWER -->
-        <div id="mobile-drawer" class="md:hidden fixed inset-0 z-[100] hidden">
-            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="drawer-close"></div>
-            <nav class="absolute left-0 top-0 h-full w-72 bg-surface-container/95 backdrop-blur-2xl border-r border-white/10 shadow-2xl p-6 space-y-1">
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md tab-active" data-tab="dashboard">
-                    <span class="material-symbols-outlined">monitoring</span> <span>Dashboard</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="stocks">
-                    <span class="material-symbols-outlined">show_chart</span> <span>Stocks</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="mf">
-                    <span class="material-symbols-outlined">account_balance</span> <span>Mutual Funds</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="bonds">
-                    <span class="material-symbols-outlined">payments</span> <span>Bonds</span>
-                </a>
-                <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="loans">
-                    <span class="material-symbols-outlined">real_estate_agent</span> <span>Loans</span>
-                </a>
-                <div class="border-t border-white/10 pt-4 mt-4">
-                    <a class="nav-tab flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-body-md text-body-md" data-tab="settings">
-                        <span class="material-symbols-outlined">settings</span> <span>Settings</span>
-                    </a>
-                </div>
-            </nav>
-        </div>
+        <!-- SIDEBAR NAV -->
+        <nav class="fixed left-0 top-0 h-full w-72 z-[60] bg-surface-container/95 backdrop-blur-2xl border-r border-white/10 shadow-2xl flex flex-col py-gutter transition-all duration-200" id="nav-drawer">
+            <div class="px-gutter mb-8 flex justify-between items-center">
+                <h2 class="font-headline-lg text-headline-lg text-primary">Bahi-Khata</h2>
+                <button class="text-on-surface-variant p-2 hover:bg-white/5 rounded-full" id="close-menu-btn">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <ul class="flex-1 overflow-y-auto space-y-1">
+                <li><a class="nav-link flex items-center gap-4 px-gutter py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 rounded-lg transition-all" data-tab="dashboard"><span class="material-symbols-outlined">monitoring</span><span>Dashboard</span></a></li>
+                <li><a class="nav-link flex items-center gap-4 px-gutter py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 rounded-lg transition-all" data-tab="stocks"><span class="material-symbols-outlined">show_chart</span><span>Stocks</span></a></li>
+                <li><a class="nav-link flex items-center gap-4 px-gutter py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 rounded-lg transition-all" data-tab="mf"><span class="material-symbols-outlined">account_balance</span><span>Mutual Funds</span></a></li>
+                <li><a class="nav-link flex items-center gap-4 px-gutter py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 rounded-lg transition-all" data-tab="bonds"><span class="material-symbols-outlined">payments</span><span>Bonds</span></a></li>
+                <li><a class="nav-link flex items-center gap-4 px-gutter py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 rounded-lg transition-all" data-tab="loans"><span class="material-symbols-outlined">real_estate_agent</span><span>Loans</span></a></li>
+            </ul>
+        </nav>
+
+        <!-- OVERLAY -->
+        <div class="fixed inset-0 bg-black/50 z-[55] hidden backdrop-blur-sm" id="drawer-overlay"></div>
 
         <!-- MAIN CONTENT -->
-        <main class="flex-1 w-full md:ml-72 pt-20 md:pt-8 pb-24 md:pb-8 px-container-padding-mobile md:px-container-padding-desktop flex flex-col gap-6">
+        <main class="pt-20 px-container-padding-mobile md:ml-72 pb-24 md:px-container-padding-desktop max-w-7xl mx-auto flex flex-col gap-8">
 
-            <!-- DASHBOARD PANEL -->
+            <!-- DASHBOARD -->
             <div id="dashboard-panel" class="panel active">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h2 class="font-headline-lg text-headline-lg text-on-surface">Dashboard</h2>
-                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Your portfolio overview</p>
-                    </div>
-                    <button class="flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all font-label-sm text-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" id="refresh-btn">
-                        <span class="material-symbols-outlined text-[18px]">refresh</span> Refresh
-                    </button>
-                </div>
-
-                <!-- Summary Strip -->
-                <div class="glass-panel rounded-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sticky top-20 z-40">
+                <section class="glass-panel rounded-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sticky top-20 z-40">
                     <div>
                         <p class="text-on-surface-variant mb-1 uppercase tracking-wider text-xs">Total Net P/L</p>
                         <div class="flex items-baseline gap-4">
-                            <h2 class="font-display-lg text-display-lg glow-text-primary" id="dash-net-pl">+₹0</h2>
-                            <span class="font-data-lg text-data-lg bg-success/10 px-2 py-1 rounded" id="dash-net-pct">0%</span>
+                            <h2 class="font-display-lg text-display-lg glow-text-success" id="net-pl">+₹0</h2>
+                            <span class="font-data-lg text-data-lg glow-text-success bg-success/10 px-2 py-1 rounded" id="net-pct">0%</span>
                         </div>
                     </div>
                     <div class="flex gap-8 w-full md:w-auto border-t border-white/10 md:border-t-0 pt-4 md:pt-0">
                         <div>
                             <p class="text-on-surface-variant mb-1 text-sm">Invested</p>
-                            <p class="font-data-lg text-data-lg text-on-surface" id="dash-invested">₹0</p>
+                            <p class="font-data-lg text-data-lg text-on-surface" id="invested">₹0</p>
                         </div>
                         <div class="w-px bg-white/10 h-10 self-center"></div>
                         <div>
                             <p class="text-on-surface-variant mb-1 text-sm">Current Value</p>
-                            <p class="font-data-lg text-data-lg text-on-surface" id="dash-value">₹0</p>
+                            <p class="font-data-lg text-data-lg text-on-surface" id="current">₹0</p>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- Category Cards -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-card-gap">
-                    <div class="glass-panel rounded-xl p-4 flex flex-col gap-2">
+                <section class="grid grid-cols-2 md:grid-cols-4 gap-card-gap">
+                    <div class="glass-panel glass-panel-hover rounded-xl p-5 flex flex-col gap-3 transition-all duration-300">
                         <div class="flex justify-between items-center">
                             <span class="material-symbols-outlined text-primary">show_chart</span>
-                            <span class="text-xs bg-success/10 px-2 py-0.5 rounded-full" id="cat-stocks-ret">0%</span>
+                            <span class="text-xs text-success bg-success/10 px-2 py-0.5 rounded-full" id="cat-stocks">+0%</span>
                         </div>
-                        <p class="text-on-surface-variant text-sm">Stocks</p>
-                        <p class="font-data-lg text-data-lg text-on-surface" id="cat-stocks-val">₹0</p>
+                        <div>
+                            <p class="text-on-surface-variant text-sm">Stocks</p>
+                            <p class="font-data-lg text-data-lg text-on-surface" id="cat-stocks-val">₹0</p>
+                        </div>
                     </div>
-                    <div class="glass-panel rounded-xl p-4 flex flex-col gap-2">
+                    <div class="glass-panel glass-panel-hover rounded-xl p-5 flex flex-col gap-3 transition-all duration-300">
                         <div class="flex justify-between items-center">
                             <span class="material-symbols-outlined text-secondary">account_balance</span>
-                            <span class="text-xs bg-success/10 px-2 py-0.5 rounded-full" id="cat-mf-ret">0%</span>
+                            <span class="text-xs text-success bg-success/10 px-2 py-0.5 rounded-full" id="cat-mf">+0%</span>
                         </div>
-                        <p class="text-on-surface-variant text-sm">Mutual Funds</p>
-                        <p class="font-data-lg text-data-lg text-on-surface" id="cat-mf-val">₹0</p>
+                        <div>
+                            <p class="text-on-surface-variant text-sm">Mutual Funds</p>
+                            <p class="font-data-lg text-data-lg text-on-surface" id="cat-mf-val">₹0</p>
+                        </div>
                     </div>
-                    <div class="glass-panel rounded-xl p-4 flex flex-col gap-2">
+                    <div class="glass-panel glass-panel-hover rounded-xl p-5 flex flex-col gap-3 transition-all duration-300">
                         <div class="flex justify-between items-center">
                             <span class="material-symbols-outlined text-tertiary">payments</span>
-                            <span class="text-xs bg-white/5 px-2 py-0.5 rounded-full" id="cat-bonds-ret">0%</span>
+                            <span class="text-xs bg-white/5 px-2 py-0.5 rounded-full" id="cat-bonds">+0%</span>
                         </div>
-                        <p class="text-on-surface-variant text-sm">Bonds</p>
-                        <p class="font-data-lg text-data-lg text-on-surface" id="cat-bonds-val">₹0</p>
+                        <div>
+                            <p class="text-on-surface-variant text-sm">Bonds</p>
+                            <p class="font-data-lg text-data-lg text-on-surface" id="cat-bonds-val">₹0</p>
+                        </div>
                     </div>
-                    <div class="glass-panel rounded-xl p-4 flex flex-col gap-2">
+                    <div class="glass-panel glass-panel-hover rounded-xl p-5 flex flex-col gap-3 transition-all duration-300">
                         <div class="flex justify-between items-center">
                             <span class="material-symbols-outlined text-error">real_estate_agent</span>
-                            <span class="text-xs bg-error/10 px-2 py-0.5 rounded-full" id="cat-loans-ret">0%</span>
+                            <span class="text-xs text-error bg-error/10 px-2 py-0.5 rounded-full" id="cat-loans">-0%</span>
                         </div>
-                        <p class="text-on-surface-variant text-sm">Loans</p>
-                        <p class="font-data-lg text-data-lg text-on-surface" id="cat-loans-val">₹0</p>
+                        <div>
+                            <p class="text-on-surface-variant text-sm">Loans</p>
+                            <p class="font-data-lg text-data-lg text-on-surface" id="cat-loans-val">₹0</p>
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
 
-            <!-- STOCKS PANEL -->
+            <!-- STOCKS -->
             <div id="stocks-panel" class="panel">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
                         <h2 class="font-headline-lg text-headline-lg text-on-surface">Stocks</h2>
-                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage your equity holdings</p>
+                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage your equity</p>
                     </div>
-                    <button class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all font-label-sm text-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="document.getElementById('add-stock-modal').classList.remove('hidden')">
-                        <span class="material-symbols-outlined text-[18px]">add</span> Add Stock
+                    <button class="flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary font-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="openModal('stock')">
+                        <span class="material-symbols-outlined">add</span> Add Stock
                     </button>
                 </div>
                 <div id="stocks-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-card-gap">
-                    <p class="text-on-surface-variant text-center py-8 col-span-full">No stocks added yet</p>
+                    <p class="text-on-surface-variant text-center py-8 col-span-full">No stocks</p>
                 </div>
             </div>
 
-            <!-- MF PANEL -->
+            <!-- MF -->
             <div id="mf-panel" class="panel">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
                         <h2 class="font-headline-lg text-headline-lg text-on-surface">Mutual Funds</h2>
-                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage your MF holdings</p>
+                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage your MF</p>
                     </div>
-                    <button class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all font-label-sm text-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="document.getElementById('add-mf-modal').classList.remove('hidden')">
-                        <span class="material-symbols-outlined text-[18px]">add</span> Add MF
+                    <button class="flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary font-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="openModal('mf')">
+                        <span class="material-symbols-outlined">add</span> Add MF
                     </button>
                 </div>
                 <div id="mf-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-card-gap">
-                    <p class="text-on-surface-variant text-center py-8 col-span-full">No mutual funds added yet</p>
+                    <p class="text-on-surface-variant text-center py-8 col-span-full">No mutual funds</p>
                 </div>
             </div>
 
-            <!-- BONDS PANEL -->
+            <!-- BONDS -->
             <div id="bonds-panel" class="panel">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
                         <h2 class="font-headline-lg text-headline-lg text-on-surface">Bonds</h2>
-                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage your bond portfolio</p>
+                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage your bonds</p>
                     </div>
-                    <button class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all font-label-sm text-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="document.getElementById('add-bond-modal').classList.remove('hidden')">
-                        <span class="material-symbols-outlined text-[18px]">add</span> Add Bond
+                    <button class="flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary font-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="openModal('bond')">
+                        <span class="material-symbols-outlined">add</span> Add Bond
                     </button>
                 </div>
                 <div id="bonds-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-card-gap">
-                    <p class="text-on-surface-variant text-center py-8 col-span-full">No bonds added yet</p>
+                    <p class="text-on-surface-variant text-center py-8 col-span-full">No bonds</p>
                 </div>
             </div>
 
-            <!-- LOANS PANEL -->
+            <!-- LOANS -->
             <div id="loans-panel" class="panel">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
                         <h2 class="font-headline-lg text-headline-lg text-on-surface">Loans</h2>
-                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Track your active loans</p>
+                        <p class="font-body-md text-body-md text-on-surface-variant mt-1">Track your loans</p>
                     </div>
-                    <button class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all font-label-sm text-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="document.getElementById('add-loan-modal').classList.remove('hidden')">
-                        <span class="material-symbols-outlined text-[18px]">add</span> Add Loan
+                    <button class="flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary font-label-sm font-bold shadow-[0_0_15px_rgba(208,188,255,0.3)]" onclick="openModal('loan')">
+                        <span class="material-symbols-outlined">add</span> Add Loan
                     </button>
                 </div>
                 <div id="loans-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-card-gap">
-                    <p class="text-on-surface-variant text-center py-8 col-span-full">No loans added yet</p>
-                </div>
-            </div>
-
-            <!-- PREMIUM PANEL -->
-            <div id="premium-panel" class="panel">
-                <div class="glass-panel rounded-2xl p-8 text-center max-w-2xl mx-auto">
-                    <span class="material-symbols-outlined text-6xl text-tertiary mb-4 block">workspace_premium</span>
-                    <h2 class="font-headline-lg text-on-surface mb-3">Go Premium</h2>
-                    <p class="text-on-surface-variant mb-6">Unlock advanced analytics, detailed reports, and priority support</p>
-                    <button class="px-8 py-3 rounded-lg bg-gradient-to-r from-tertiary to-tertiary/70 text-on-tertiary font-bold hover:shadow-[0_0_30px_rgba(255,185,95,0.3)]">Subscribe for ₹299/month</button>
-                </div>
-            </div>
-
-            <!-- SETTINGS PANEL -->
-            <div id="settings-panel" class="panel">
-                <div class="max-w-2xl">
-                    <h2 class="font-headline-lg text-on-surface mb-6">Settings</h2>
-                    <div class="space-y-4">
-                        <div class="glass-panel rounded-xl p-4">
-                            <p class="text-on-surface mb-2">Profile</p>
-                            <p class="text-on-surface-variant text-sm" id="user-email">Loading...</p>
-                        </div>
-                        <button id="logout-btn" class="w-full py-3 rounded-lg bg-error text-on-error font-bold hover:shadow-[0_0_30px_rgba(255,180,171,0.3)]">Logout</button>
-                    </div>
+                    <p class="text-on-surface-variant text-center py-8 col-span-full">No loans</p>
                 </div>
             </div>
         </main>
-
-        <!-- MOBILE BOTTOM NAV -->
-        <nav class="md:hidden flex justify-around items-center h-16 px-4 bg-surface-container-low/80 backdrop-blur-xl fixed bottom-0 w-full z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] border-t border-white/10">
-            <a class="mobile-nav-tab flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary p-2 rounded-lg text-center transition-colors" data-tab="dashboard">
-                <span class="material-symbols-outlined">monitoring</span>
-                <span class="font-label-sm text-label-sm">Dashboard</span>
-            </a>
-            <a class="mobile-nav-tab flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary p-2 rounded-lg text-center transition-colors" data-tab="stocks">
-                <span class="material-symbols-outlined">show_chart</span>
-                <span class="font-label-sm text-label-sm">Stocks</span>
-            </a>
-            <a class="mobile-nav-tab flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary p-2 rounded-lg text-center transition-colors" data-tab="mf">
-                <span class="material-symbols-outlined">account_balance</span>
-                <span class="font-label-sm text-label-sm">MF</span>
-            </a>
-            <a class="mobile-nav-tab flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary p-2 rounded-lg text-center transition-colors" data-tab="premium">
-                <span class="material-symbols-outlined">workspace_premium</span>
-                <span class="font-label-sm text-label-sm">Premium</span>
-            </a>
-        </nav>
     </div>
 
-    <!-- ADD MODALS -->
-    <div id="add-stock-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-background/80 backdrop-blur-sm" onclick="this.parentElement.classList.add('hidden')"></div>
-        <div class="glass-panel w-full max-w-md rounded-2xl relative z-10 overflow-hidden shadow-2xl flex flex-col">
-            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-surface-container/50">
-                <h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Add Stock</h3>
-                <button class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-white/10" onclick="document.getElementById('add-stock-modal').classList.add('hidden')">
+    <!-- MODAL -->
+    <div id="modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-background/80 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="glass-panel w-full max-w-md rounded-2xl relative z-10 shadow-2xl flex flex-col">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                <h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface" id="modal-title">Add</h3>
+                <button class="text-on-surface-variant hover:text-on-surface p-1" onclick="closeModal()">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="p-6 flex flex-col gap-4">
-                <input type="text" placeholder="Stock Symbol (e.g. INFY)" class="glass-panel rounded-lg px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary" id="stock-symbol" />
-                <input type="number" placeholder="Quantity" class="glass-panel rounded-lg px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary" id="stock-qty" />
-                <input type="number" placeholder="Buy Price (₹)" class="glass-panel rounded-lg px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary" id="stock-price" />
-                <input type="date" class="glass-panel rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary" id="stock-date" />
-            </div>
-            <div class="p-6 border-t border-white/10 bg-surface-container/30 flex gap-3 justify-end">
-                <button class="px-5 py-2 rounded-lg text-on-surface-variant hover:bg-white/5 font-label-sm text-label-sm" onclick="document.getElementById('add-stock-modal').classList.add('hidden')">Cancel</button>
-                <button class="px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-label-sm text-label-sm font-bold" onclick="addStock()">Add</button>
-            </div>
+            <div class="p-6 flex flex-col gap-4" id="modal-content"></div>
         </div>
     </div>
 
@@ -392,18 +275,131 @@
         let supabase, currentUser = null;
         let portfolio = { stocks: [], mf: [], bonds: [], loans: [] };
 
-        async function initSupabase() {
-            if (!window.SUPABASE_URL) return console.error('Supabase config not loaded');
+        // WebGL
+        const canvas = document.getElementById('shader-canvas');
+        function initShader() {
+            function syncSize() {
+                const w = canvas.clientWidth || 1280;
+                const h = canvas.clientHeight || 720;
+                if (canvas.width !== w || canvas.height !== h) {
+                    canvas.width = w;
+                    canvas.height = h;
+                }
+            }
+            new ResizeObserver(syncSize).observe(canvas);
+            syncSize();
+            const gl = canvas.getContext('webgl');
+            if (!gl) return;
+            const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+            const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+void main() {
+    vec2 uv = v_texCoord;
+    vec3 color1 = vec3(0.039, 0.039, 0.078);
+    vec3 color2 = vec3(0.07, 0.07, 0.14);
+    float pulse = sin(u_time * 0.5) * 0.5 + 0.5;
+    vec3 accent1 = vec3(0.545, 0.361, 0.965);
+    vec3 accent2 = vec3(0.024, 0.714, 0.831);
+    float noise = sin(uv.x * 10.0 + u_time) * cos(uv.y * 10.0 - u_time) * 0.1;
+    vec3 base = mix(color1, color2, uv.y + noise);
+    float dist = distance(uv, vec2(0.5 + sin(u_time * 0.2) * 0.3, 0.5 + cos(u_time * 0.3) * 0.3));
+    vec3 glow = mix(accent1, accent2, pulse) * (0.05 / (dist + 0.5));
+    gl_FragColor = vec4(base + glow, 1.0);
+}`;
+            const vs_compiled = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs_compiled, vs);
+            gl.compileShader(vs_compiled);
+            const fs_compiled = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs_compiled, fs);
+            gl.compileShader(fs_compiled);
+            const prog = gl.createProgram();
+            gl.attachShader(prog, vs_compiled);
+            gl.attachShader(prog, fs_compiled);
+            gl.linkProgram(prog);
+            gl.useProgram(prog);
+            const buf = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+            const pos = gl.getAttribLocation(prog, 'a_position');
+            gl.enableVertexAttribArray(pos);
+            gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+            const uTime = gl.getUniformLocation(prog, 'u_time');
+            function render(t) {
+                syncSize();
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                if (uTime) gl.uniform1f(uTime, t * 0.001);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                requestAnimationFrame(render);
+            }
+            render(0);
+        }
+
+        async function init() {
+            if (!window.SUPABASE_URL) return;
             supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
-            
+            initShader();
+
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 currentUser = user;
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-email').textContent = user.email;
                 await loadPortfolio();
             }
+
+            // Nav
+            document.querySelectorAll('.nav-link').forEach(l => {
+                l.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab(l.dataset.tab);
+                });
+            });
+
+            // Menu
+            document.getElementById('menu-btn').addEventListener('click', () => {
+                document.getElementById('nav-drawer').classList.toggle('open');
+                document.getElementById('drawer-overlay').classList.toggle('hidden');
+            });
+            document.getElementById('close-menu-btn').addEventListener('click', () => {
+                document.getElementById('nav-drawer').classList.remove('open');
+                document.getElementById('drawer-overlay').classList.add('hidden');
+            });
+            document.getElementById('drawer-overlay').addEventListener('click', () => {
+                document.getElementById('nav-drawer').classList.remove('open');
+                document.getElementById('drawer-overlay').classList.add('hidden');
+            });
+
+            // Auth
+            document.getElementById('auth-btn').addEventListener('click', async () => {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    currentUser = data.user;
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-screen').classList.remove('hidden');
+                    await loadPortfolio();
+                } catch (e) {
+                    alert('Login failed: ' + e.message);
+                }
+            });
+
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await supabase.auth.signOut();
+                location.reload();
+            });
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(tab + '-panel').classList.add('active');
         }
 
         async function loadPortfolio() {
@@ -413,141 +409,139 @@
                 portfolio = { stocks: [], mf: [], bonds: [], loans: [] };
                 if (data) {
                     data.forEach(h => {
-                        const type = h.type || 'stock';
-                        if (portfolio[type + 's'] || type === 'loan') {
-                            portfolio[type === 'loan' ? 'loans' : type + 's'].push(h);
+                        const t = h.type || 'stock';
+                        if (portfolio[t + 's'] || t === 'loan') {
+                            (portfolio[t === 'loan' ? 'loans' : t + 's']).push(h);
                         }
                     });
                 }
-                updateDashboard();
-                renderStocks();
+                updateDash();
+                renderAll();
             } catch (e) {
-                console.error('Error loading portfolio:', e);
+                console.error('Error:', e);
             }
         }
 
-        function updateDashboard() {
-            let totalInv = 0, totalVal = 0;
-            portfolio.stocks.forEach(s => { totalInv += s.quantity * s.buy_price; totalVal += s.quantity * (s.current_price || s.buy_price); });
-            portfolio.mf.forEach(m => { totalInv += m.units * m.buy_nav; totalVal += m.units * (m.current_nav || m.buy_nav); });
-            portfolio.bonds.forEach(b => { totalInv += b.principal; totalVal += b.principal + (b.accrued_interest || 0); });
-            portfolio.loans.forEach(l => { totalInv -= l.amount; });
+        function updateDash() {
+            let inv = 0, val = 0;
+            portfolio.stocks.forEach(s => { inv += s.quantity * s.buy_price; val += s.quantity * (s.current_price || s.buy_price); });
+            portfolio.mf.forEach(m => { inv += m.units * m.buy_nav; val += m.units * (m.current_nav || m.buy_nav); });
+            portfolio.bonds.forEach(b => { inv += b.principal; val += b.principal + (b.accrued_interest || 0); });
+            portfolio.loans.forEach(l => { inv -= l.amount; });
 
-            const netPL = totalVal - totalInv;
-            const pct = totalInv > 0 ? ((netPL / totalInv) * 100).toFixed(1) : 0;
+            const pl = val - inv;
+            const pct = inv > 0 ? ((pl / inv) * 100).toFixed(1) : 0;
 
-            document.getElementById('dash-net-pl').textContent = '₹' + Math.round(netPL).toLocaleString();
-            document.getElementById('dash-net-pct').textContent = (netPL >= 0 ? '+' : '') + pct + '%';
-            document.getElementById('dash-invested').textContent = '₹' + Math.round(totalInv).toLocaleString();
-            document.getElementById('dash-value').textContent = '₹' + Math.round(totalVal).toLocaleString();
+            document.getElementById('net-pl').textContent = '₹' + Math.round(pl).toLocaleString();
+            document.getElementById('net-pct').textContent = (pl >= 0 ? '+' : '') + pct + '%';
+            document.getElementById('invested').textContent = '₹' + Math.round(inv).toLocaleString();
+            document.getElementById('current').textContent = '₹' + Math.round(val).toLocaleString();
 
-            // Categories
-            const stocksInv = portfolio.stocks.reduce((s, x) => s + x.quantity * x.buy_price, 0);
-            const stocksVal = portfolio.stocks.reduce((s, x) => s + x.quantity * (x.current_price || x.buy_price), 0);
-            document.getElementById('cat-stocks-val').textContent = '₹' + Math.round(stocksVal).toLocaleString();
-            document.getElementById('cat-stocks-ret').textContent = (stocksInv > 0 ? (((stocksVal - stocksInv) / stocksInv) * 100).toFixed(1) : 0) + '%';
+            const sInv = portfolio.stocks.reduce((s, x) => s + x.quantity * x.buy_price, 0);
+            const sVal = portfolio.stocks.reduce((s, x) => s + x.quantity * (x.current_price || x.buy_price), 0);
+            document.getElementById('cat-stocks-val').textContent = '₹' + Math.round(sVal).toLocaleString();
+            document.getElementById('cat-stocks').textContent = (sInv > 0 ? (((sVal - sInv) / sInv) * 100).toFixed(1) : 0) + '%';
         }
 
-        function renderStocks() {
-            const list = document.getElementById('stocks-list');
-            if (portfolio.stocks.length === 0) {
-                list.innerHTML = '<p class="text-on-surface-variant text-center py-8 col-span-full">No stocks added yet</p>';
+        function renderAll() {
+            renderList('stocks', portfolio.stocks, ['symbol', 'quantity', 'buy_price']);
+            renderList('mf', portfolio.mf, ['scheme', 'units', 'buy_nav']);
+            renderList('bonds', portfolio.bonds, ['name', 'principal']);
+            renderList('loans', portfolio.loans, ['name', 'amount']);
+        }
+
+        function renderList(type, arr, fields) {
+            const list = document.getElementById(type + '-list');
+            if (arr.length === 0) {
+                list.innerHTML = '<p class="text-on-surface-variant text-center py-8 col-span-full">No ' + type + '</p>';
                 return;
             }
-
-            list.innerHTML = portfolio.stocks.map((s, i) => {
-                const inv = s.quantity * s.buy_price;
-                const val = s.quantity * (s.current_price || s.buy_price);
-                const pl = val - inv;
-                return `
-                    <div class="glass-panel rounded-xl p-5 flex flex-col gap-4 group">
-                        <div class="flex justify-between items-start">
-                            <div><h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">${s.symbol}</h3>
-                                <span class="font-label-sm text-label-sm text-on-surface-variant">NSE • Eq</span></div>
-                            <div class="text-right"><div class="font-data-lg text-data-lg ${pl >= 0 ? 'text-secondary glow-text-green' : 'text-error glow-text-red'}">${pl >= 0 ? '+' : ''}${((pl/inv)*100).toFixed(1)}%</div>
-                                <div class="font-label-sm text-label-sm text-on-surface-variant">₹${(s.current_price || s.buy_price).toFixed(2)}</div></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 py-3 border-y border-white/5">
-                            <div><span class="font-label-sm text-label-sm text-on-surface-variant">Qty</span><span class="font-data-lg text-data-lg text-on-surface">${s.quantity}</span></div>
-                            <div class="text-right"><span class="font-label-sm text-label-sm text-on-surface-variant">Avg Price</span><span class="font-data-lg text-data-lg text-on-surface">₹${s.buy_price.toFixed(2)}</span></div>
-                        </div>
-                        <div class="flex justify-between items-center mt-auto">
-                            <div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant">P&L</span><span class="font-data-lg text-data-lg ${pl >= 0 ? 'text-secondary' : 'text-error'}">₹${pl.toFixed(2)}</span></div>
-                            <div class="flex gap-1">
-                                <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-full" onclick="editStock(${i})"><span class="material-symbols-outlined">edit</span></button>
-                                <button class="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-full" onclick="deleteStock(${i})"><span class="material-symbols-outlined">delete</span></button>
-                            </div>
-                        </div>
+            list.innerHTML = arr.map((h, i) => `
+                <div class="glass-panel rounded-xl p-5 flex flex-col gap-4">
+                    <div><h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">${h[fields[0]]}</h3></div>
+                    <div class="py-3 border-y border-white/5">
+                        <p class="text-on-surface-variant text-sm">${fields[1]}: <span class="font-data-lg">${h[fields[1]]}</span></p>
+                        <p class="text-on-surface-variant text-sm">${fields[2]}: <span class="font-data-lg">₹${h[fields[2]]}</span></p>
                     </div>
-                `;
-            }).join('');
+                    <div class="flex gap-1 mt-auto">
+                        <button class="p-2 text-on-surface-variant hover:text-primary" onclick="editItem('${type}', ${i})"><span class="material-symbols-outlined">edit</span></button>
+                        <button class="p-2 text-on-surface-variant hover:text-error" onclick="deleteItem('${type}', ${i})"><span class="material-symbols-outlined">delete</span></button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        async function addStock() {
-            const symbol = document.getElementById('stock-symbol').value;
-            const qty = parseFloat(document.getElementById('stock-qty').value);
-            const price = parseFloat(document.getElementById('stock-price').value);
-            
-            if (!symbol || !qty || !price) return alert('Fill all fields');
-            
-            if (!currentUser || !supabase) return;
+        function openModal(type) {
+            document.getElementById('modal-title').textContent = 'Add ' + type.charAt(0).toUpperCase() + type.slice(1);
+            const content = {
+                stock: '<input id="inp-symbol" placeholder="Symbol" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><input id="inp-qty" type="number" placeholder="Quantity" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><input id="inp-price" type="number" placeholder="Buy Price" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><button class="py-3 rounded-lg bg-primary text-on-primary font-bold" onclick="saveStock()">Save</button>',
+                mf: '<input id="inp-scheme" placeholder="Scheme" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><input id="inp-units" type="number" placeholder="Units" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><input id="inp-nav" type="number" placeholder="Buy NAV" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><button class="py-3 rounded-lg bg-primary text-on-primary font-bold" onclick="saveMF()">Save</button>',
+                bond: '<input id="inp-name" placeholder="Bond Name" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><input id="inp-principal" type="number" placeholder="Principal" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><button class="py-3 rounded-lg bg-primary text-on-primary font-bold" onclick="saveBond()">Save</button>',
+                loan: '<input id="inp-lname" placeholder="Loan Name" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><input id="inp-amount" type="number" placeholder="Amount" class="glass-panel rounded-lg px-4 py-3 text-on-surface" /><button class="py-3 rounded-lg bg-primary text-on-primary font-bold" onclick="saveLoan()">Save</button>'
+            };
+            document.getElementById('modal-content').innerHTML = content[type] || '';
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        async function saveStock() {
+            const symbol = document.getElementById('inp-symbol').value;
+            const qty = parseFloat(document.getElementById('inp-qty').value);
+            const price = parseFloat(document.getElementById('inp-price').value);
+            if (!symbol || !qty || !price) return alert('Fill all');
             try {
-                const { error } = await supabase.from('holdings').insert({
-                    user_id: currentUser.id,
-                    type: 'stock',
-                    symbol, quantity: qty, buy_price: price, current_price: price,
-                    created_at: new Date().toISOString()
-                });
-                if (error) throw error;
-                document.getElementById('add-stock-modal').classList.add('hidden');
+                await supabase.from('holdings').insert({ user_id: currentUser.id, type: 'stock', symbol, quantity: qty, buy_price: price, current_price: price });
+                closeModal();
                 await loadPortfolio();
             } catch (e) {
                 alert('Error: ' + e.message);
             }
         }
 
-        // Navigation
-        document.querySelectorAll('.nav-tab, .mobile-nav-tab').forEach(t => {
-            t.addEventListener('click', (e) => {
-                e.preventDefault();
-                const tab = t.dataset.tab;
-                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-                document.getElementById(tab + '-panel').classList.add('active');
-                document.getElementById('mobile-drawer').classList.add('hidden');
-            });
-        });
-
-        // Mobile menu
-        document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
-            document.getElementById('mobile-drawer').classList.toggle('hidden');
-        });
-        document.getElementById('drawer-close')?.addEventListener('click', () => {
-            document.getElementById('mobile-drawer').classList.add('hidden');
-        });
-
-        // Auth
-        document.getElementById('auth-submit')?.addEventListener('click', async () => {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
+        async function saveMF() {
+            const scheme = document.getElementById('inp-scheme').value;
+            const units = parseFloat(document.getElementById('inp-units').value);
+            const nav = parseFloat(document.getElementById('inp-nav').value);
+            if (!scheme || !units || !nav) return alert('Fill all');
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                currentUser = data.user;
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-email').textContent = email;
+                await supabase.from('holdings').insert({ user_id: currentUser.id, type: 'mf', scheme, units, buy_nav: nav, current_nav: nav });
+                closeModal();
                 await loadPortfolio();
             } catch (e) {
-                alert('Login failed: ' + e.message);
+                alert('Error: ' + e.message);
             }
-        });
+        }
 
-        document.getElementById('logout-btn')?.addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            location.reload();
-        });
+        async function saveBond() {
+            const name = document.getElementById('inp-name').value;
+            const principal = parseFloat(document.getElementById('inp-principal').value);
+            if (!name || !principal) return alert('Fill all');
+            try {
+                await supabase.from('holdings').insert({ user_id: currentUser.id, type: 'bond', name, principal, accrued_interest: 0 });
+                closeModal();
+                await loadPortfolio();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
 
-        window.addEventListener('DOMContentLoaded', initSupabase);
+        async function saveLoan() {
+            const name = document.getElementById('inp-lname').value;
+            const amount = parseFloat(document.getElementById('inp-amount').value);
+            if (!name || !amount) return alert('Fill all');
+            try {
+                await supabase.from('holdings').insert({ user_id: currentUser.id, type: 'loan', name, amount, interest_rate: 0 });
+                closeModal();
+                await loadPortfolio();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
