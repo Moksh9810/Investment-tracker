@@ -66,6 +66,14 @@
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         .panel { display: none; }
         .panel.active { display: block; }
+        /* Active Nav Link Styling - EXACTLY LIKE STITCH */
+        .nav-link.active {
+            background-color: rgba(208, 188, 255, 0.2);
+            color: #d0bcff;
+            border-left: 4px solid #d0bcff;
+            padding-left: calc(24px - 4px);
+        }
+        .nav-link { transition: all 0.2s ease; }
     </style>
 </head>
 <body class="min-h-screen relative font-body-md text-body-md">
@@ -360,6 +368,8 @@ void main() {
                     switchTab(l.dataset.tab);
                 });
             });
+            // Set dashboard as active initially
+            switchTab('dashboard');
 
             // Menu
             document.getElementById('menu-btn').addEventListener('click', () => {
@@ -400,6 +410,9 @@ void main() {
         function switchTab(tab) {
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.getElementById(tab + '-panel').classList.add('active');
+            // Update nav link styling
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
         }
 
         async function loadPortfolio() {
