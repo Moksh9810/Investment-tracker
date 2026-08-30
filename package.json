@@ -1,0 +1,49 @@
+{
+  "name": "bahi-khata",
+  "version": "1.0.0",
+  "description": "Your Wealth, Reimagined - Investment Tracker for Indian Investors",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "http-server -p 8000 -c-1 --gzip",
+    "serve": "python3 -m http.server 8000",
+    "build": "echo 'No build step needed - static files only'",
+    "lint": "eslint js/ --fix",
+    "format": "prettier --write .",
+    "test": "echo 'Run tests with your test framework'",
+    "deploy": "vercel",
+    "deploy:prod": "vercel --prod"
+  },
+  "keywords": [
+    "investment",
+    "tracker",
+    "portfolio",
+    "stocks",
+    "mutual-funds",
+    "bonds",
+    "india",
+    "wealth",
+    "finance"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.4"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Moksh9810/Investment-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Moksh9810/Investment-tracker/issues"
+  },
+  "homepage": "https://github.com/Moksh9810/Investment-tracker#readme"
+}
